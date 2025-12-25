@@ -3,6 +3,7 @@ from openai import OpenAI
 import pandas as pd
 import json
 import re
+import html
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -48,22 +49,7 @@ def safe_get_list(d: dict, key: str) -> list:
     v = d.get(key, [])
     return v if isinstance(v, list) else []
 
-def split_sentences(text: str) -> list[str]:
-    """
-    Simple sentence splitter (good enough for classroom use).
-    Keeps punctuation.
-    """
-    text = (text or "").strip()
-    if not text:
-        return []
-    # Split on . ! ? followed by whitespace, keep punctuation in previous sentence
-    parts = re.split(r'(?<=[.!?])\s+', text)
-    return [p.strip() for p in parts if p.strip()]
-
 def parse_protected_terms(raw: str) -> list[str]:
-    """
-    Accepts comma/newline separated terms.
-    """
     if not raw:
         return []
     terms = re.split(r"[,\n]+", raw)
@@ -94,15 +80,94 @@ else:
 client = get_client(api_key)
 
 # -------------------------
+# Flashcard HTML (click to reveal)
+# -------------------------
+def render_flashcard(title: str, back_text: str, key: str):
+    """
+    Uses Streamlit session_state to reveal/hide translation.
+    The card itself is clickable via a button styled as a card.
+    """
+    if key not in st.session_state:
+        st.session_state[key] = False  # False = hidden
+
+    # Styled "card button"
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stButton"] > button.flashcard-btn {
+            width: 100%;
+            text-align: left;
+            border: 1px solid rgba(49, 51, 63, 0.2);
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: white;
+            transition: transform 0.05s ease-in-out;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        div[data-testid="stButton"] > button.flashcard-btn:hover {
+            border-color: rgba(49, 51, 63, 0.35);
+        }
+        div[data-testid="stButton"] > button.flashcard-btn:active {
+            transform: scale(0.99);
+        }
+        .flashcard-title {
+            font-weight: 700;
+            font-size: 1.0rem;
+            margin-bottom: 6px;
+        }
+        .flashcard-hint {
+            opacity: 0.75;
+            font-size: 0.95rem;
+        }
+        .flashcard-back {
+            border: 1px dashed rgba(49, 51, 63, 0.35);
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: rgba(240, 242, 246, 0.6);
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    btn_label = f"{title}\n\nClick to {'hide' if st.session_state[key] else 'reveal'}"
+    # We use a normal button but style it as a card.
+    clicked = st.button(btn_label, key=f"{key}_btn", type="secondary")
+    # Patch the button class via small JS-free hack: Streamlit adds the class name from the label?
+    # Instead, we rely on :has() not available. We'll set button style by injecting CSS to target the last button.
+    # Workaround: use st.button and then set CSS to all buttons; acceptable for this app.
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stButton"] > button[kind="secondary"]{
+            border-radius: 14px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if clicked:
+        st.session_state[key] = not st.session_state[key]
+
+    if st.session_state[key]:
+        safe_text = html.escape(back_text or "")
+        st.markdown(f'<div class="flashcard-back">{safe_text}</div>', unsafe_allow_html=True)
+    else:
+        st.caption("Hidden. Click the card to reveal the full translation.")
+
+# -------------------------
 # Main UI
 # -------------------------
 st.title("🎓 Academic Text Helper")
 st.markdown(
-    "Paste your text to get: simplified English, a full translation of the original text, a vocab table, and quick comprehension questions."
+    "Paste your text to get: simplified English, a hidden (click-to-reveal) full translation, a vocab table, and quick comprehension questions."
 )
 
 # Controls above the input box
-col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([1.2, 1, 1])
+col_ctrl1, col_ctrl2 = st.columns([1.2, 1])
 
 with col_ctrl1:
     target_lang_ui = st.selectbox(
@@ -120,22 +185,11 @@ with col_ctrl2:
     )
     cefr = extract_cefr(level_label)
 
-with col_ctrl3:
-    model_name = st.selectbox(
-        "Model",
-        ["gpt-5-nano", "gpt-5-mini"],
-        index=1
-    )
-
-# Optional: protected key terms
 protected_raw = st.text_input(
     "Protected key terms (optional) - these will NOT be simplified. Separate by commas or new lines.",
     placeholder="e.g. diffusion, osmosis, concentration gradient"
 )
 protected_terms = parse_protected_terms(protected_raw)
-
-# Optional: sentence-by-sentence display
-sentence_mode = st.toggle("Sentence-by-sentence view", value=False)
 
 # Side-by-side input and simplified output
 col_in, col_out = st.columns([1, 1])
@@ -152,9 +206,9 @@ with col_out:
     st.subheader("📖 Simplified Text (English)")
     simplified_placeholder = st.empty()
 
-# Full translation area
+# Translation flashcard section (under the side-by-side)
 st.subheader(f"🌍 Full Translation of Input Text ({target_lang_ui})")
-translation_placeholder = st.empty()
+translation_container = st.container()
 
 # -------------------------
 # AI function
@@ -163,8 +217,7 @@ def get_scaffolded_content(
     text: str,
     language: str,
     cefr_level: str,
-    protected: list[str],
-    model: str
+    protected: list[str]
 ) -> dict | None:
     """
     Returns:
@@ -180,8 +233,6 @@ def get_scaffolded_content(
     prompt = f"""
 You are an expert EAL teacher and a careful translator.
 
-You will receive INPUT_TEXT.
-
 Protected key terms (do NOT change these exact terms in the simplified text):
 {protected_block if protected_block else "(none)"}
 
@@ -192,7 +243,7 @@ Tasks:
    Output as SIMPLIFIED_TEXT.
 
 2) Translate the ORIGINAL INPUT_TEXT into {language}. Output as FULL_TRANSLATION.
-   FULL_TRANSLATION must be entirely in {language} and natural (not word-for-word).
+   FULL_TRANSLATION must be entirely in {language} and natural.
 
 3) Vocabulary:
    Pick exactly 5 difficult academic words from INPUT_TEXT (not random).
@@ -204,7 +255,6 @@ Tasks:
 4) Comprehension check:
    Create exactly 3 short questions suitable for CEFR {cefr_level} based on SIMPLIFIED_TEXT.
    Each question must have a short, clear answer.
-   Output as QUESTIONS.
 
 Return JSON ONLY with EXACTLY this shape:
 {{
@@ -233,7 +283,6 @@ Rules:
 - questions must contain exactly 3 items.
 - FULL_TRANSLATION must contain no English.
 - translation_definition must contain no English.
-- Keep questions short and direct (good for EAL).
 
 INPUT_TEXT:
 {text}
@@ -241,7 +290,7 @@ INPUT_TEXT:
 
     try:
         response = client.chat.completions.create(
-            model=model,
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "You output strict JSON only. No extra keys, no markdown."},
                 {"role": "user", "content": prompt}
@@ -305,45 +354,29 @@ if st.button("✨ Generate Support", type="primary"):
     if not source_text or not source_text.strip():
         st.warning("⚠️ Please paste some text first.")
     else:
+        # Reset flashcard hidden state for new content
+        st.session_state["translation_revealed"] = False
+
         with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
             data = get_scaffolded_content(
                 text=source_text.strip(),
                 language=target_lang,
                 cefr_level=cefr,
-                protected=protected_terms,
-                model=model_name
+                protected=protected_terms
             )
 
         if data:
             simplified_text = data["simplified_text"]
             full_translation = data["full_translation"]
 
-            # Update main outputs
             simplified_placeholder.success(simplified_text if simplified_text else "(No simplified text returned)")
-            translation_placeholder.info(full_translation if full_translation else "(No translation returned)")
 
-            # Sentence-by-sentence view
-            if sentence_mode:
-                st.divider()
-                st.subheader("🧩 Sentence-by-sentence (Original → Simplified)")
-                orig_sents = split_sentences(source_text.strip())
-                simp_sents = split_sentences(simplified_text)
-
-                # Align lengths (simple alignment)
-                n = max(len(orig_sents), len(simp_sents))
-                while len(orig_sents) < n:
-                    orig_sents.append("")
-                while len(simp_sents) < n:
-                    simp_sents.append("")
-
-                rows = []
-                for i in range(n):
-                    rows.append({
-                        "Original (English)": orig_sents[i],
-                        "Simplified (English)": simp_sents[i],
-                    })
-
-                st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+            with translation_container:
+                render_flashcard(
+                    title="🃏 Translation Flashcard",
+                    back_text=full_translation or "",
+                    key="translation_revealed"
+                )
 
             # Vocabulary table
             st.divider()
@@ -368,19 +401,19 @@ if st.button("✨ Generate Support", type="primary"):
             st.divider()
             st.subheader("✅ Comprehension Check")
 
-            qs = data.get("questions", [])
-            for i, qa in enumerate(qs, start=1):
-                q = qa.get("question", "").strip()
-                a = qa.get("answer", "").strip()
+            for i, qa in enumerate(data.get("questions", []), start=1):
+                q = (qa.get("question") or "").strip()
+                a = (qa.get("answer") or "").strip()
                 if not q:
                     continue
                 st.markdown(f"**Q{i}. {q}**")
                 with st.expander("Show suggested answer"):
                     st.write(a if a else "(No answer returned)")
-
         else:
             simplified_placeholder.info("No output yet. Try again.")
-            translation_placeholder.info("No output yet. Try again.")
+            with translation_container:
+                st.caption("No translation yet.")
 else:
     simplified_placeholder.info("Click the button to generate the simplified text.")
-    translation_placeholder.info("Click the button to generate the full translation.")
+    with translation_container:
+        st.caption("Translation is hidden until you generate support, then click the flashcard to reveal.")
