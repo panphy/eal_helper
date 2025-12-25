@@ -5,8 +5,8 @@ import json
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
-    page_title="EAL Scaffolder (GPT-5)",
-    page_icon="🚀",
+    page_title="EAL Scaffolder",
+    page_icon="🎓",
     layout="wide"
 )
 
@@ -14,19 +14,20 @@ st.set_page_config(
 with st.sidebar:
     st.header("⚙️ Settings")
     
-    # Check for secret key first (for deployment), otherwise ask user
+    # 1. API Key Check (Silent)
+    # The app will simply fail gracefully if you haven't set this up in Streamlit Cloud yet.
     if "OPENAI_API_KEY" in st.secrets:
         api_key = st.secrets["OPENAI_API_KEY"]
-        st.success("✅ Teacher's API Key Loaded")
     else:
-        api_key = st.text_input("OpenAI API Key", type="password", help="Enter your OpenAI API key here.")
+        st.error("🚨 Admin Error: OpenAI API Key not found in secrets.")
+        st.stop()
     
     st.divider()
     
-    # Customization Options
+    # 2. Student Options
     target_lang = st.selectbox(
-        "Student's Home Language", 
-        ["Spanish", "Polish", "Arabic", "Urdu", "Chinese", "French", "None (English Only)"]
+        "Translation Language", 
+        ["Spanish", "Polish", "Arabic", "Urdu", "Chinese", "French", "Japanese", "Portuguese"]
     )
     
     difficulty = st.select_slider(
@@ -36,53 +37,46 @@ with st.sidebar:
     )
 
 # --- MAIN PAGE ---
-st.title("🚀 Academic Text Scaffolder")
-st.caption("Powered by OpenAI GPT-5 Mini")
-
-st.markdown("""
-**Instructions:** Paste a complex academic text below. 
-The AI will simplify the language and extract key vocabulary using the latest GPT-5 reasoning.
-""")
+st.title("🎓 Academic Text Helper")
+st.markdown("Paste your difficult text below to get a simplified version and a translated vocabulary list.")
 
 # Input Area
-source_text = st.text_area("Paste your academic text here:", height=200)
+source_text = st.text_area("Paste text here:", height=200, placeholder="Example: Photosynthesis is the process used by plants to convert light energy into chemical energy...")
 
 # --- THE AI BRAIN ---
 def get_scaffolded_content(text, language, level):
-    """
-    Sends the text to OpenAI GPT-5 Mini and requests a JSON response.
-    """
-    if not api_key:
-        st.error("Please add an API Key in the sidebar.")
-        return None
-        
     client = OpenAI(api_key=api_key)
     
-    # GPT-5 Prompting Strategy:
-    # GPT-5 handles complex instruction following much better than GPT-4.
-    # We can be very specific about the 'tone' and 'nuance' of the definition.
+    # PROMPT ENGINEERING
+    # We strictly enforce TWO distinct fields for the vocabulary to ensure translation happens.
     prompt = f"""
-    You are an expert EAL specialist. Analyze the text below.
+    You are an expert EAL teacher. Analyze the provided text.
     
-    1. **Simplify:** Rewrite the text for CEFR Level {level}. Keep the original meaning but use simpler sentence structures.
-    2. **Extract:** Identify the 5 most critical academic words (Tier 2/3) that block comprehension.
-    3. **Define:** Provide a simple English definition AND a translation in {language}.
+    1. **Simplify:** Rewrite the text for CEFR Level {level}. Keep the meaning but use simpler grammar.
+    2. **Extract:** Identify the 5 most difficult academic words.
+    3. **Translate:** For each word, provide:
+       - A simple English definition.
+       - A direct translation into {language}.
     
-    Return ONLY a JSON object with this exact structure:
+    Return JSON ONLY:
     {{
         "summary": "The simplified text...",
         "vocabulary": [
-            {{"word": "example", "definition": "simple definition", "translation": "translated word"}}
+            {{
+                "word": "English Word", 
+                "definition": "Simple English Definition", 
+                "translation": "Word in {language}"
+            }}
         ]
     }}
     
-    Text to analyze:
+    Input Text:
     "{text}"
     """
 
     try:
         response = client.chat.completions.create(
-            model="gpt-5-mini",  # UPDATED TO LATEST MODEL
+            model="gpt-5-mini", 
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that outputs strict JSON."},
                 {"role": "user", "content": prompt}
@@ -95,31 +89,33 @@ def get_scaffolded_content(text, language, level):
         return None
 
 # --- ACTION BUTTON ---
-if st.button("✨ Scaffold Text", type="primary"):
+if st.button("✨ Simplify & Translate", type="primary"):
     if not source_text:
-        st.warning("⚠️ Please paste some text to analyze.")
+        st.warning("⚠️ Please paste some text first.")
     else:
-        with st.spinner("GPT-5 is analyzing..."):
+        with st.spinner(f"Translating to {target_lang} with GPT-5 Mini..."):
             data = get_scaffolded_content(source_text, target_lang, difficulty)
             
             if data:
-                # Layout: Two columns for side-by-side comparison
+                # Layout: Side-by-Side
                 col1, col2 = st.columns([1, 1])
                 
                 with col1:
-                    st.subheader("📖 Simplified Version")
+                    st.subheader("📖 Simplified Text")
                     st.success(data["summary"])
                     
                 with col2:
-                    st.subheader(f"🔑 Key Vocabulary ({target_lang})")
+                    st.subheader(f"🔑 Vocabulary ({target_lang})")
                     df = pd.DataFrame(data["vocabulary"])
+                    
+                    # Force column order and naming for clarity
                     st.dataframe(
                         df, 
                         hide_index=True, 
                         use_container_width=True,
                         column_config={
                             "word": "Word",
-                            "definition": "Definition",
-                            "translation": f"Translation"
+                            "definition": "English Definition",
+                            "translation": f"Translation ({target_lang})"
                         }
                     )
