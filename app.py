@@ -14,7 +14,6 @@ st.set_page_config(
 # -------------------------
 # Helpers
 # -------------------------
-# Alphabetical by UI label
 LANGUAGE_MAP = {
     "Arabic": "Arabic",
     "Chinese (Simplified)": "Simplified Chinese",
@@ -202,7 +201,7 @@ INPUT_TEXT:
 if "result" not in st.session_state:
     st.session_state["result"] = None
 
-# Defaults for remembered selections (only used on first load)
+# Remember selections within session
 if "lang_ui" not in st.session_state:
     st.session_state["lang_ui"] = "Arabic"
 if "level_label" not in st.session_state:
@@ -220,11 +219,11 @@ st.markdown(
 col_ctrl1, col_ctrl2 = st.columns([1.2, 1])
 
 with col_ctrl1:
+    lang_keys = list(LANGUAGE_MAP.keys())
     target_lang_ui = st.selectbox(
         "Translation Language",
-        list(LANGUAGE_MAP.keys()),
-        index=list(LANGUAGE_MAP.keys()).index(st.session_state["lang_ui"])
-            if st.session_state["lang_ui"] in LANGUAGE_MAP else 0,
+        lang_keys,
+        index=lang_keys.index(st.session_state["lang_ui"]) if st.session_state["lang_ui"] in LANGUAGE_MAP else 0,
         key="lang_ui"
     )
     target_lang = LANGUAGE_MAP[target_lang_ui]
@@ -233,8 +232,7 @@ with col_ctrl2:
     level_label = st.selectbox(
         "English Level (Simplification)",
         LEVEL_OPTIONS,
-        index=LEVEL_OPTIONS.index(st.session_state["level_label"])
-            if st.session_state["level_label"] in LEVEL_OPTIONS else 1,
+        index=LEVEL_OPTIONS.index(st.session_state["level_label"]) if st.session_state["level_label"] in LEVEL_OPTIONS else 1,
         key="level_label"
     )
     cefr = extract_cefr(level_label)
@@ -246,11 +244,16 @@ protected_raw = st.text_input(
 )
 protected_terms = parse_protected_terms(protected_raw)
 
-# Side-by-side input and simplified output
+# --- Aligned side-by-side section: one shared header row ---
+hdr1, hdr2 = st.columns([1, 1])
+with hdr1:
+    st.subheader("📝 Input Text")
+with hdr2:
+    st.subheader("📖 Simplified Text (English)")
+
 col_in, col_out = st.columns([1, 1])
 
 with col_in:
-    st.subheader("📝 Input Text")
     source_text = st.text_area(
         "",
         height=260,
@@ -259,11 +262,18 @@ with col_in:
     )
 
 with col_out:
-    st.subheader("📖 Simplified Text (English)")
     if st.session_state["result"] is None:
-        st.info("Click **Generate Support** to see the simplified text.")
+        st.text_area("", value="", height=260, disabled=True, label_visibility="collapsed")
+        st.caption("Click **Generate Support** to see the simplified text.")
     else:
-        st.success(st.session_state["result"].get("simplified_text") or "(No simplified text returned)")
+        # Use a disabled text area so it lines up visually with the input box
+        st.text_area(
+            "",
+            value=st.session_state["result"].get("simplified_text") or "",
+            height=260,
+            disabled=True,
+            label_visibility="collapsed"
+        )
 
 # Action button
 st.markdown("")
