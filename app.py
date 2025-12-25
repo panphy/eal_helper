@@ -197,10 +197,16 @@ INPUT_TEXT:
         return None
 
 # -------------------------
-# Session state init (so outputs persist when user clicks around)
+# Session state init
 # -------------------------
 if "result" not in st.session_state:
     st.session_state["result"] = None
+
+# Defaults for remembered selections (only used on first load)
+if "lang_ui" not in st.session_state:
+    st.session_state["lang_ui"] = "Arabic"
+if "level_label" not in st.session_state:
+    st.session_state["level_label"] = "Intermediate (B1)"
 
 # -------------------------
 # Main UI
@@ -214,16 +220,29 @@ st.markdown(
 col_ctrl1, col_ctrl2 = st.columns([1.2, 1])
 
 with col_ctrl1:
-    target_lang_ui = st.selectbox("Translation Language", list(LANGUAGE_MAP.keys()), index=0)
+    target_lang_ui = st.selectbox(
+        "Translation Language",
+        list(LANGUAGE_MAP.keys()),
+        index=list(LANGUAGE_MAP.keys()).index(st.session_state["lang_ui"])
+            if st.session_state["lang_ui"] in LANGUAGE_MAP else 0,
+        key="lang_ui"
+    )
     target_lang = LANGUAGE_MAP[target_lang_ui]
 
 with col_ctrl2:
-    level_label = st.selectbox("English Level (Simplification)", LEVEL_OPTIONS, index=0)
+    level_label = st.selectbox(
+        "English Level (Simplification)",
+        LEVEL_OPTIONS,
+        index=LEVEL_OPTIONS.index(st.session_state["level_label"])
+            if st.session_state["level_label"] in LEVEL_OPTIONS else 1,
+        key="level_label"
+    )
     cefr = extract_cefr(level_label)
 
 protected_raw = st.text_input(
     "Protected key terms (optional) - these will NOT be simplified. Separate by commas or new lines.",
-    placeholder="e.g. diffusion, osmosis, concentration gradient"
+    placeholder="e.g. diffusion, osmosis, concentration gradient",
+    key="protected_terms_raw"
 )
 protected_terms = parse_protected_terms(protected_raw)
 
@@ -235,7 +254,8 @@ with col_in:
     source_text = st.text_area(
         "",
         height=260,
-        placeholder="Example: Photosynthesis is the process used by plants to convert light energy into chemical energy..."
+        placeholder="Example: Photosynthesis is the process used by plants to convert light energy into chemical energy...",
+        key="source_text"
     )
 
 with col_out:
