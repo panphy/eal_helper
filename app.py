@@ -2,7 +2,6 @@ import streamlit as st
 from openai import OpenAI
 import pandas as pd
 import json
-import re
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -26,11 +25,6 @@ LANGUAGE_MAP = {
     "German": "German",
     "Turkish": "Turkish",
 }
-
-def extract_cefr(level_label: str) -> str:
-    """Convert 'Intermediate (B1)' -> 'B1' (fallback: original string)."""
-    m = re.search(r"\((A1|A2|B1|B2|C1|C2)\)", level_label)
-    return m.group(1) if m else level_label
 
 @st.cache_resource
 def get_client(api_key: str) -> OpenAI:
@@ -61,7 +55,7 @@ client = get_client(api_key)
 st.title("🎓 Academic Text Helper")
 st.markdown("Paste your text to get a simplified version and a translated vocabulary list.")
 
-# Single dropdown on top of the input box (as requested)
+# Single dropdown on top of the input box
 target_lang_ui = st.selectbox(
     "Translation Language",
     list(LANGUAGE_MAP.keys()),
@@ -90,18 +84,20 @@ with col_out:
 def get_scaffolded_content(text: str, language: str) -> dict | None:
     """
     Returns:
-    - simplified_text (English, simplified)
-    - vocabulary: list of {word, definition, translation}
+    - simplified_text (English)
+    - vocabulary: list of
+        {word, definition, translation_word, translation_definition}
     """
     prompt = f"""
 You are an expert EAL teacher.
 
 Tasks:
-1) Simplify INPUT_TEXT into clear, student-friendly academic English. Keep the meaning and key physics terms accurate.
+1) Simplify INPUT_TEXT into clear, student-friendly academic English. Keep the meaning accurate.
 2) Select exactly 5 difficult academic words from INPUT_TEXT.
 3) For each word provide:
    - definition: simple English definition
-   - translation: direct translation into {language}
+   - translation_word: direct translation of the word into {language}
+   - translation_definition: translation of the definition into {language}
 
 Return JSON ONLY with EXACTLY this shape:
 {{
@@ -110,7 +106,8 @@ Return JSON ONLY with EXACTLY this shape:
     {{
       "word": "English word",
       "definition": "simple English definition",
-      "translation": "the {language} translation"
+      "translation_word": "word in {language}",
+      "translation_definition": "definition translated into {language}"
     }}
   ]
 }}
@@ -119,6 +116,7 @@ Rules:
 - No markdown.
 - No extra keys.
 - vocabulary must contain exactly 5 items.
+- translation_definition must be entirely in {language} (no English).
 
 INPUT_TEXT:
 {text}
@@ -150,13 +148,19 @@ INPUT_TEXT:
             cleaned_vocab.append({
                 "word": safe_get_str(item, "word"),
                 "definition": safe_get_str(item, "definition"),
-                "translation": safe_get_str(item, "translation"),
+                "translation_word": safe_get_str(item, "translation_word"),
+                "translation_definition": safe_get_str(item, "translation_definition"),
             })
 
         # Hard enforce 5 rows for stable UI
         cleaned_vocab = cleaned_vocab[:5]
         while len(cleaned_vocab) < 5:
-            cleaned_vocab.append({"word": "", "definition": "", "translation": ""})
+            cleaned_vocab.append({
+                "word": "",
+                "definition": "",
+                "translation_word": "",
+                "translation_definition": ""
+            })
 
         return {"simplified_text": simplified, "vocabulary": cleaned_vocab}
 
@@ -167,7 +171,7 @@ INPUT_TEXT:
 # -------------------------
 # Action button
 # -------------------------
-st.markdown("")  # small spacer
+st.markdown("")  # spacer
 if st.button("✨ Simplify & Translate Vocabulary", type="primary"):
     if not source_text or not source_text.strip():
         st.warning("⚠️ Please paste some text first.")
@@ -176,21 +180,27 @@ if st.button("✨ Simplify & Translate Vocabulary", type="primary"):
             data = get_scaffolded_content(source_text.strip(), target_lang)
 
         if data:
-            simplified_placeholder.success(data["simplified_text"] if data["simplified_text"] else "(No simplified text returned)")
+            simplified_placeholder.success(
+                data["simplified_text"] if data["simplified_text"] else "(No simplified text returned)"
+            )
 
             # Vocab table under the input/output box
             st.divider()
             st.subheader(f"🔑 Vocabulary ({target_lang_ui})")
 
             df = pd.DataFrame(data["vocabulary"])
-            for c in ["word", "definition", "translation"]:
+
+            # Force columns + order for stable display
+            expected_cols = ["word", "definition", "translation_word", "translation_definition"]
+            for c in expected_cols:
                 if c not in df.columns:
                     df[c] = ""
 
-            df = df[["word", "definition", "translation"]].rename(columns={
+            df = df[expected_cols].rename(columns={
                 "word": "Word",
                 "definition": "English Definition",
-                "translation": f"Translation ({target_lang_ui})"
+                "translation_word": f"Word Translation ({target_lang_ui})",
+                "translation_definition": f"Definition Translation ({target_lang_ui})",
             })
 
             st.dataframe(df, hide_index=True, use_container_width=True)
