@@ -196,16 +196,10 @@ INPUT_TEXT:
         return None
 
 # -------------------------
-# Session state init
+# Session state init (results persist)
 # -------------------------
 if "result" not in st.session_state:
     st.session_state["result"] = None
-
-# Remember selections within session
-if "lang_ui" not in st.session_state:
-    st.session_state["lang_ui"] = "Arabic"
-if "level_label" not in st.session_state:
-    st.session_state["level_label"] = "Intermediate (B1)"
 
 # -------------------------
 # Main UI
@@ -220,19 +214,27 @@ col_ctrl1, col_ctrl2 = st.columns([1.2, 1])
 
 with col_ctrl1:
     lang_keys = list(LANGUAGE_MAP.keys())
+    default_lang = "Arabic"
+    current_lang = st.session_state.get("lang_ui", default_lang)
+    lang_index = lang_keys.index(current_lang) if current_lang in lang_keys else 0
+
     target_lang_ui = st.selectbox(
         "Translation Language",
         lang_keys,
-        index=lang_keys.index(st.session_state["lang_ui"]) if st.session_state["lang_ui"] in LANGUAGE_MAP else 0,
+        index=lang_index,
         key="lang_ui"
     )
     target_lang = LANGUAGE_MAP[target_lang_ui]
 
 with col_ctrl2:
+    default_level = "Intermediate (B1)"
+    current_level = st.session_state.get("level_label", default_level)
+    level_index = LEVEL_OPTIONS.index(current_level) if current_level in LEVEL_OPTIONS else 1
+
     level_label = st.selectbox(
         "English Level (Simplification)",
         LEVEL_OPTIONS,
-        index=LEVEL_OPTIONS.index(st.session_state["level_label"]) if st.session_state["level_label"] in LEVEL_OPTIONS else 1,
+        index=level_index,
         key="level_label"
     )
     cefr = extract_cefr(level_label)
@@ -244,7 +246,7 @@ protected_raw = st.text_input(
 )
 protected_terms = parse_protected_terms(protected_raw)
 
-# --- Aligned side-by-side section: one shared header row ---
+# --- Aligned side-by-side section ---
 hdr1, hdr2 = st.columns([1, 1])
 with hdr1:
     st.subheader("📝 Input Text")
@@ -266,7 +268,6 @@ with col_out:
         st.text_area("", value="", height=260, disabled=True, label_visibility="collapsed")
         st.caption("Click **Generate Support** to see the simplified text.")
     else:
-        # Use a disabled text area so it lines up visually with the input box
         st.text_area(
             "",
             value=st.session_state["result"].get("simplified_text") or "",
