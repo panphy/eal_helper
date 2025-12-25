@@ -124,7 +124,7 @@ INPUT_TEXT:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-5-mini",
+            model="gpt-5-nano",
             messages=[
                 {"role": "system", "content": "You output strict JSON only. No extra keys, no markdown."},
                 {"role": "user", "content": prompt}
