@@ -91,7 +91,7 @@ Protected key terms (do NOT change these exact terms in the simplified text):
 {protected_block}
 
 Tasks:
-1) Simplify INPUT_TEXT into clear, student-friendly academic English at CEFR {cefr_level}.
+1) Simplify and paraphrase INPUT_TEXT into clear, student-friendly academic English at CEFR {cefr_level}.
    Preserve meaning and keep subject keywords accurate.
    IMPORTANT: Do NOT change the protected key terms (keep the exact spelling).
    Output as SIMPLIFIED_TEXT.
@@ -218,7 +218,7 @@ with col_ctrl1:
     target_lang = LANGUAGE_MAP[target_lang_ui]
 
 with col_ctrl2:
-    level_label = st.selectbox("English Level (Simplification)", LEVEL_OPTIONS, index=1)
+    level_label = st.selectbox("English Level (Simplification)", LEVEL_OPTIONS, index=0)
     cefr = extract_cefr(level_label)
 
 protected_raw = st.text_input(
