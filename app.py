@@ -14,17 +14,20 @@ st.set_page_config(
 # -------------------------
 # Helpers
 # -------------------------
+# Alphabetical by UI label
 LANGUAGE_MAP = {
-    "Spanish": "Spanish",
-    "Polish": "Polish",
     "Arabic": "Arabic",
-    "Urdu": "Urdu",
-    "Chinese": "Simplified Chinese",
+    "Chinese (Simplified)": "Simplified Chinese",
+    "Chinese (Traditional)": "Traditional Chinese",
     "French": "French",
-    "Japanese": "Japanese",
-    "Portuguese": "Portuguese",
     "German": "German",
+    "Japanese": "Japanese",
+    "Polish": "Polish",
+    "Portuguese": "Portuguese",
+    "Spanish": "Spanish",
+    "Thai": "Thai",
     "Turkish": "Turkish",
+    "Urdu": "Urdu",
 }
 
 LEVEL_OPTIONS = [
@@ -162,7 +165,7 @@ INPUT_TEXT:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-5-nano",
+            model="gpt-5-mini",
             messages=[
                 {"role": "system", "content": "You output strict JSON only. No extra keys, no markdown."},
                 {"role": "user", "content": prompt}
