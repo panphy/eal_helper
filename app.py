@@ -3,6 +3,7 @@ from openai import OpenAI
 import pandas as pd
 import json
 import re
+import html
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -76,6 +77,37 @@ else:
     st.stop()
 
 client = get_client(api_key)
+
+# -------------------------
+# CSS: green simplified box + alignment
+# -------------------------
+BOX_HEIGHT_PX = 260
+
+st.markdown(
+    f"""
+    <style>
+      .simplified-box {{
+        background: #e8f5e9;            /* light green */
+        color: #1b5e20;                 /* dark green */
+        border: 1px solid rgba(27, 94, 32, 0.25);
+        border-radius: 12px;
+        padding: 12px 14px;
+        height: {BOX_HEIGHT_PX}px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        line-height: 1.35;
+      }}
+      .simplified-placeholder {{
+        color: rgba(27, 94, 32, 0.75);
+      }}
+      /* Reduce any extra top spacing inside columns */
+      .block-container {{
+        padding-top: 2.2rem;
+      }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # -------------------------
 # AI function
@@ -196,7 +228,7 @@ INPUT_TEXT:
         return None
 
 # -------------------------
-# Session state init (results persist)
+# Session state init
 # -------------------------
 if "result" not in st.session_state:
     st.session_state["result"] = None
@@ -214,29 +246,15 @@ col_ctrl1, col_ctrl2 = st.columns([1.2, 1])
 
 with col_ctrl1:
     lang_keys = list(LANGUAGE_MAP.keys())
-    default_lang = "Arabic"
-    current_lang = st.session_state.get("lang_ui", default_lang)
+    current_lang = st.session_state.get("lang_ui", "Arabic")
     lang_index = lang_keys.index(current_lang) if current_lang in lang_keys else 0
-
-    target_lang_ui = st.selectbox(
-        "Translation Language",
-        lang_keys,
-        index=lang_index,
-        key="lang_ui"
-    )
+    target_lang_ui = st.selectbox("Translation Language", lang_keys, index=lang_index, key="lang_ui")
     target_lang = LANGUAGE_MAP[target_lang_ui]
 
 with col_ctrl2:
-    default_level = "Intermediate (B1)"
-    current_level = st.session_state.get("level_label", default_level)
+    current_level = st.session_state.get("level_label", "Intermediate (B1)")
     level_index = LEVEL_OPTIONS.index(current_level) if current_level in LEVEL_OPTIONS else 1
-
-    level_label = st.selectbox(
-        "English Level (Simplification)",
-        LEVEL_OPTIONS,
-        index=level_index,
-        key="level_label"
-    )
+    level_label = st.selectbox("English Level (Simplification)", LEVEL_OPTIONS, index=level_index, key="level_label")
     cefr = extract_cefr(level_label)
 
 protected_raw = st.text_input(
@@ -258,22 +276,24 @@ col_in, col_out = st.columns([1, 1])
 with col_in:
     source_text = st.text_area(
         "",
-        height=260,
+        height=BOX_HEIGHT_PX,
         placeholder="Example: Photosynthesis is the process used by plants to convert light energy into chemical energy...",
-        key="source_text"
+        key="source_text",
+        label_visibility="collapsed"   # IMPORTANT: removes label space to align perfectly
     )
 
 with col_out:
-    if st.session_state["result"] is None:
-        st.text_area("", value="", height=260, disabled=True, label_visibility="collapsed")
-        st.caption("Click **Generate Support** to see the simplified text.")
+    result = st.session_state["result"]
+    if result is None:
+        st.markdown(
+            f'<div class="simplified-box simplified-placeholder">Click <b>Generate Support</b> to see the simplified text.</div>',
+            unsafe_allow_html=True
+        )
     else:
-        st.text_area(
-            "",
-            value=st.session_state["result"].get("simplified_text") or "",
-            height=260,
-            disabled=True,
-            label_visibility="collapsed"
+        simp = result.get("simplified_text") or ""
+        st.markdown(
+            f'<div class="simplified-box">{html.escape(simp)}</div>',
+            unsafe_allow_html=True
         )
 
 # Action button
