@@ -3,7 +3,6 @@ from openai import OpenAI
 import pandas as pd
 import json
 import re
-import html
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -25,6 +24,7 @@ LANGUAGE_MAP = {
     "Japanese": "Japanese",
     "Polish": "Polish",
     "Portuguese": "Portuguese",
+    "Russian": "Russian",
     "Spanish": "Spanish",
     "Thai": "Thai",
     "Turkish": "Turkish",
@@ -58,7 +58,6 @@ def parse_protected_terms(raw: str) -> list[str]:
         t = t.strip()
         if t:
             cleaned.append(t)
-    # de-dup while preserving order
     seen = set()
     out = []
     for t in cleaned:
@@ -78,45 +77,6 @@ else:
     st.stop()
 
 client = get_client(api_key)
-
-# -------------------------
-# Styling for flashcard button + back
-# -------------------------
-st.markdown(
-    """
-    <style>
-    /* Make a button look like a card */
-    div[data-testid="stButton"] > button.flashcard {
-        width: 100%;
-        text-align: left;
-        border: 1px solid rgba(49, 51, 63, 0.25);
-        border-radius: 14px;
-        padding: 14px 16px;
-        background: white;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-        transition: transform 0.05s ease-in-out, border-color 0.1s ease-in-out;
-        white-space: pre-wrap;
-        line-height: 1.25;
-    }
-    div[data-testid="stButton"] > button.flashcard:hover {
-        border-color: rgba(49, 51, 63, 0.45);
-    }
-    div[data-testid="stButton"] > button.flashcard:active {
-        transform: scale(0.99);
-    }
-
-    .flashcard-back {
-        border: 1px dashed rgba(49, 51, 63, 0.35);
-        border-radius: 14px;
-        padding: 14px 16px;
-        background: rgba(240, 242, 246, 0.6);
-        margin-top: 10px;
-        white-space: pre-wrap;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # -------------------------
 # AI function
@@ -237,19 +197,17 @@ INPUT_TEXT:
         return None
 
 # -------------------------
-# Session state init
+# Session state init (so outputs persist when user clicks around)
 # -------------------------
 if "result" not in st.session_state:
     st.session_state["result"] = None
-if "translation_revealed" not in st.session_state:
-    st.session_state["translation_revealed"] = False
 
 # -------------------------
 # Main UI
 # -------------------------
 st.title("🎓 Academic Text Helper")
 st.markdown(
-    "Paste your text to get: simplified English, a click-to-reveal full translation, a vocab table, and quick comprehension questions."
+    "Paste your text to get: simplified English, a full translation of the original text, a vocab table, and quick comprehension questions."
 )
 
 # Controls above the input box
@@ -282,7 +240,6 @@ with col_in:
 
 with col_out:
     st.subheader("📖 Simplified Text (English)")
-    # Only show placeholder text if we have never generated anything
     if st.session_state["result"] is None:
         st.info("Click **Generate Support** to see the simplified text.")
     else:
@@ -290,9 +247,7 @@ with col_out:
 
 # Action button
 st.markdown("")
-generate = st.button("✨ Generate Support", type="primary")
-
-if generate:
+if st.button("✨ Generate Support", type="primary"):
     if not source_text or not source_text.strip():
         st.warning("⚠️ Please paste some text first.")
     else:
@@ -305,60 +260,23 @@ if generate:
             )
         if data:
             st.session_state["result"] = data
-            st.session_state["translation_revealed"] = False
             st.rerun()
 
-# -------------------------
-# Outputs (persisted)
-# -------------------------
+# Outputs
 result = st.session_state["result"]
 
 st.subheader(f"🌍 Full Translation of Input Text ({target_lang_ui})")
+if result is None:
+    st.caption("Generate support first. The translation will appear here.")
+else:
+    st.info(result.get("full_translation") or "(No translation returned)")
+
+st.divider()
+st.subheader(f"🔑 Vocabulary ({target_lang_ui})")
 
 if result is None:
-    st.caption("Generate support first. The translation will appear here as a flashcard.")
+    st.caption("Generate support first. Vocabulary will appear here.")
 else:
-    # Flashcard-like button that toggles reveal
-    front_text = "🃏 Translation Flashcard\n\nClick to reveal" if not st.session_state["translation_revealed"] else "🃏 Translation Flashcard\n\nClick to hide"
-    clicked = st.button(front_text, key="flashcard_btn")
-
-    # Apply the 'flashcard' class to THIS button only (via CSS target using its key attribute)
-    # Streamlit doesn't expose IDs, so we style all buttons then refine: we set all buttons to flashcard,
-    # but it only affects our UI here (acceptable).
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stButton"] > button {
-            /* default: do nothing */
-        }
-        /* Style specifically the flashcard button by making all buttons in this section card-like.
-           This is safe because this section only contains this one button. */
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    # Force the class via a small hack: Streamlit doesn't allow setting class directly,
-    # so we apply the card styling to the most recent button using a wrapper trick:
-    # Instead, we just rely on the global CSS selector above by tagging the button with kind="secondary" is not possible.
-    # So we keep a robust approach: style ALL buttons as flashcards is not desired.
-    # Therefore: wrap flashcard section in a container and style buttons inside that container.
-    # Streamlit doesn't support container-scoped CSS reliably, so we accept styling the button plainly,
-    # and show the back side in a card. The crucial part: persistence + reveal works.
-
-    if clicked:
-        st.session_state["translation_revealed"] = not st.session_state["translation_revealed"]
-        st.rerun()
-
-    if st.session_state["translation_revealed"]:
-        back_text = result.get("full_translation") or ""
-        st.markdown(f'<div class="flashcard-back">{html.escape(back_text)}</div>', unsafe_allow_html=True)
-    else:
-        st.caption("Hidden. Click the flashcard to reveal the full translation.")
-
-    # Vocabulary table
-    st.divider()
-    st.subheader(f"🔑 Vocabulary ({target_lang_ui})")
-
     df_vocab = pd.DataFrame(result.get("vocabulary", []))
     expected_cols = ["word", "definition", "translation_word", "translation_definition"]
     for c in expected_cols:
@@ -372,10 +290,12 @@ else:
     })
     st.dataframe(df_vocab, hide_index=True, use_container_width=True)
 
-    # Comprehension questions
-    st.divider()
-    st.subheader("✅ Comprehension Check")
+st.divider()
+st.subheader("✅ Comprehension Check")
 
+if result is None:
+    st.caption("Generate support first. Questions will appear here.")
+else:
     qs = result.get("questions", [])
     for i, qa in enumerate(qs, start=1):
         q = (qa.get("question") or "").strip()
