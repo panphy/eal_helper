@@ -87,6 +87,7 @@ client = get_client(api_key)
 # CSS: green simplified box + alignment
 # -------------------------
 BOX_HEIGHT_PX = 260
+MAX_INPUT_CHARS = 4000
 
 st.markdown(
     f"""
@@ -381,6 +382,8 @@ st.markdown("")
 if st.button("✨ Generate Support", type="primary"):
     if not source_text or not source_text.strip():
         st.warning("⚠️ Please paste some text first.")
+    elif len(source_text) > MAX_INPUT_CHARS:
+        st.warning(f"⚠️ Input is too long. Please keep it under {MAX_INPUT_CHARS:,} characters.")
     else:
         with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
             data = get_scaffolded_content(
