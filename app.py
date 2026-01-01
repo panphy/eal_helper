@@ -4,6 +4,8 @@ import pandas as pd
 import json
 import re
 import html
+import jsonschema
+from jsonschema import ValidationError
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -117,6 +119,45 @@ st.markdown(
 # -------------------------
 def get_scaffolded_content(text: str, language: str, cefr_level: str, protected: list[str]) -> dict | None:
     protected_block = "\n".join([f"- {t}" for t in protected]) if protected else "(none)"
+    response_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["simplified_text", "full_translation", "vocabulary", "questions"],
+        "properties": {
+            "simplified_text": {"type": "string"},
+            "full_translation": {"type": "string"},
+            "vocabulary": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["word", "definition", "translation_word", "translation_definition"],
+                    "properties": {
+                        "word": {"type": "string"},
+                        "definition": {"type": "string"},
+                        "translation_word": {"type": "string"},
+                        "translation_definition": {"type": "string"},
+                    },
+                },
+            },
+            "questions": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["question", "answer"],
+                    "properties": {
+                        "question": {"type": "string"},
+                        "answer": {"type": "string"},
+                    },
+                },
+            },
+        },
+    }
 
     prompt = f"""
 You are an expert EAL teacher and a careful translator.
@@ -177,18 +218,45 @@ INPUT_TEXT:
 """.strip()
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-5-mini",
-            messages=[
-                {"role": "system", "content": "You output strict JSON only. No extra keys, no markdown."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
+        system_messages = [
+            "You output strict JSON only. No extra keys, no markdown.",
+            (
+                "You must return a JSON object that exactly matches the required schema, "
+                "including exactly 5 vocabulary items and exactly 3 questions. "
+                "No extra keys, no markdown."
+            ),
+        ]
+        data = None
+        last_error: Exception | None = None
 
-        data = json.loads(response.choices[0].message.content)
-        if not isinstance(data, dict):
-            raise ValueError("Model returned non-object JSON.")
+        for attempt, system_message in enumerate(system_messages, start=1):
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-5-mini",
+                    messages=[
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": prompt}
+                    ],
+                    response_format={"type": "json_object"}
+                )
+
+                data = json.loads(response.choices[0].message.content)
+                if not isinstance(data, dict):
+                    raise ValueError("Model returned non-object JSON.")
+                jsonschema.validate(instance=data, schema=response_schema)
+                last_error = None
+                break
+            except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+                last_error = exc
+                data = None
+                if attempt == len(system_messages):
+                    break
+
+        if last_error is not None:
+            raise ValueError(
+                "Model response did not match the expected format after a retry. "
+                "Please try again."
+            ) from last_error
 
         simplified = safe_get_str(data, "simplified_text")
         full_translation = safe_get_str(data, "full_translation")
@@ -203,9 +271,6 @@ INPUT_TEXT:
                     "translation_word": safe_get_str(item, "translation_word"),
                     "translation_definition": safe_get_str(item, "translation_definition"),
                 })
-        cleaned_vocab = cleaned_vocab[:5]
-        while len(cleaned_vocab) < 5:
-            cleaned_vocab.append({"word": "", "definition": "", "translation_word": "", "translation_definition": ""})
 
         qs = safe_get_list(data, "questions")
         cleaned_qs = []
@@ -215,9 +280,6 @@ INPUT_TEXT:
                     "question": safe_get_str(item, "question"),
                     "answer": safe_get_str(item, "answer"),
                 })
-        cleaned_qs = cleaned_qs[:3]
-        while len(cleaned_qs) < 3:
-            cleaned_qs.append({"question": "", "answer": ""})
 
         return {
             "simplified_text": simplified,
