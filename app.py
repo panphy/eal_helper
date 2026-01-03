@@ -96,6 +96,10 @@ def parse_protected_terms(raw: str) -> list[str]:
 def reset_result() -> None:
     st.session_state["result"] = None
 
+def clear_input() -> None:
+    st.session_state["source_text"] = ""
+    reset_result()
+
 def load_preferences() -> dict:
     if not PREFS_PATH.exists():
         return {}
@@ -648,10 +652,7 @@ action_col, clear_col = st.columns([1, 1])
 with action_col:
     generate_clicked = st.button("✨ Generate Support", type="primary")
 with clear_col:
-    if st.button("🧹 Clear", type="secondary"):
-        st.session_state["source_text"] = ""
-        reset_result()
-        st.rerun()
+    st.button("🧹 Clear", type="secondary", on_click=clear_input)
 
 if generate_clicked:
     if not source_text or not source_text.strip():
