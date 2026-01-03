@@ -7,6 +7,7 @@ import html
 import jsonschema
 from jsonschema import ValidationError
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # --- APP CONFIGURATION ---
@@ -122,6 +123,27 @@ def persist_preferences() -> None:
 def handle_selection_change() -> None:
     reset_result()
     persist_preferences()
+
+def render_progress_overlay(percent: int) -> str:
+    clamped = max(0, min(percent, 100))
+    shade = int(120 + (clamped / 100) * 100)
+    shade_green = min(shade + 40, 255)
+    bar_style = (
+        f"width: {clamped}%;"
+        f" background: linear-gradient(90deg, rgba(37, 99, 235, 0.2),"
+        f" rgb({shade}, {shade_green}, 255));"
+    )
+    return f"""
+    <div class="ai-overlay">
+      <div class="ai-overlay-card">
+        <div class="ai-overlay-title">AI is working...</div>
+        <div class="ai-overlay-progress">
+          <div class="ai-overlay-bar" style="{bar_style}"></div>
+        </div>
+        <div class="ai-overlay-percent">{clamped}%</div>
+      </div>
+    </div>
+    """
 
 class TranslationConstraintError(ValueError):
     pass
@@ -319,21 +341,10 @@ st.markdown(
       }}
       .ai-overlay-bar {{
         height: 100%;
-        width: 40%;
-        background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), var(--color-accent), rgba(37, 99, 235, 0.2));
-        animation: ai-progress 1.2s ease-in-out infinite;
+        width: 0%;
+        background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), var(--color-accent));
         border-radius: 999px;
-      }}
-      @keyframes ai-progress {{
-        0% {{
-          transform: translateX(-60%);
-        }}
-        50% {{
-          transform: translateX(60%);
-        }}
-        100% {{
-          transform: translateX(160%);
-        }}
+        transition: width 180ms ease-out, background 300ms ease-out;
       }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
@@ -740,53 +751,47 @@ if generate_clicked:
             )
         else:
             st.session_state["is_processing"] = True
-            st.markdown(
-                """
-                <div class="ai-overlay">
-                  <div class="ai-overlay-card">
-                    <div class="ai-overlay-title">AI is working...</div>
-                    <div class="ai-overlay-progress">
-                      <div class="ai-overlay-bar"></div>
-                    </div>
-                    <div class="ai-overlay-percent" id="ai-progress-percent">0%</div>
-                  </div>
-                </div>
-                <script>
-                  (() => {
-                    const el = document.getElementById("ai-progress-percent");
-                    if (!el || el.dataset.bound === "true") return;
-                    el.dataset.bound = "true";
-                    const target = 95;
-                    let current = 0;
-                    const step = () => {
-                      if (current < target) {
-                        const remaining = target - current;
-                        current += Math.max(1, Math.round(remaining / 15));
-                        if (current > target) current = target;
-                        el.textContent = `${current}%`;
-                      } else {
-                        clearInterval(timer);
-                      }
-                    };
-                    const timer = setInterval(step, 160);
-                    step();
-                  })();
-                </script>
-                """,
+            overlay_placeholder = st.empty()
+            overlay_placeholder.markdown(
+                render_progress_overlay(0),
                 unsafe_allow_html=True,
             )
             st.session_state["call_times"] = call_times + [now]
             st.session_state["call_count"] += 1
+            data = None
             try:
-                with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
-                    data = get_scaffolded_content(
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        get_scaffolded_content,
                         text=source_text.strip(),
                         language=target_lang,
                         cefr_level=cefr,
-                        protected=protected_terms
+                        protected=protected_terms,
                     )
+                    current = 0
+                    while current < 95 and not future.done():
+                        remaining = 95 - current
+                        current += max(1, round(remaining / 15))
+                        overlay_placeholder.markdown(
+                            render_progress_overlay(current),
+                            unsafe_allow_html=True,
+                        )
+                        time.sleep(0.16)
+                    while not future.done():
+                        overlay_placeholder.markdown(
+                            render_progress_overlay(95),
+                            unsafe_allow_html=True,
+                        )
+                        time.sleep(0.2)
+                    data = future.result()
+                    overlay_placeholder.markdown(
+                        render_progress_overlay(100),
+                        unsafe_allow_html=True,
+                    )
+                    time.sleep(0.1)
             finally:
                 st.session_state["is_processing"] = False
+                overlay_placeholder.empty()
             if data:
                 st.session_state["result"] = data
                 st.rerun()
