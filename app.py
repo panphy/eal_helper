@@ -7,7 +7,6 @@ import html
 import jsonschema
 from jsonschema import ValidationError
 import time
-import time
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -125,6 +124,40 @@ SESSION_QUOTA_MAX_CALLS = 20
 st.markdown(
     f"""
     <style>
+      :root {{
+        color-scheme: light;
+      }}
+      .app-hero {{
+        background: linear-gradient(120deg, #f5f7ff, #eef9f2);
+        border: 1px solid rgba(45, 78, 120, 0.08);
+        border-radius: 16px;
+        padding: 18px 20px;
+        margin-bottom: 1rem;
+      }}
+      .app-hero h1 {{
+        margin-bottom: 0.2rem;
+        font-size: 2rem;
+      }}
+      .app-hero p {{
+        margin: 0;
+        color: rgba(18, 18, 18, 0.72);
+      }}
+      .section-card {{
+        background: #ffffff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      }}
+      .hint-pill {{
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.08);
+        color: #1d4ed8;
+        font-size: 0.85rem;
+        margin-right: 6px;
+      }}
       .simplified-box {{
         background: #e8f5e9;            /* light green */
         color: #1b5e20;                 /* dark green */
@@ -399,13 +432,18 @@ if "call_count" not in st.session_state:
 # -------------------------
 # Main UI
 # -------------------------
-st.title("🎓 Academic Text Helper")
 st.markdown(
-    "Paste your text to get: simplified English, a full translation of the original text, a vocab table, and quick comprehension questions."
+    """
+    <div class="app-hero">
+      <h1>🎓 Academic Text Helper</h1>
+      <p>Paste a passage to get simplified English, a faithful translation, vocabulary support, and comprehension checks in one place.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 # Controls above the input box
-col_ctrl1, col_ctrl2 = st.columns([1.2, 1])
+col_ctrl1, col_ctrl2 = st.columns([1.1, 1])
 
 with col_ctrl1:
     lang_keys = list(LANGUAGE_MAP.keys())
@@ -440,6 +478,17 @@ protected_raw = st.text_input(
 )
 protected_terms = parse_protected_terms(protected_raw)
 
+# Quick status row
+status_left, status_right = st.columns([1, 1])
+with status_left:
+    st.markdown(
+        f'<span class="hint-pill">CEFR: {cefr}</span>'
+        f'<span class="hint-pill">Protected terms: {len(protected_terms)}</span>',
+        unsafe_allow_html=True,
+    )
+with status_right:
+    st.caption(f"Max input length: {MAX_INPUT_CHARS:,} characters")
+
 # --- Aligned side-by-side section ---
 hdr1, hdr2 = st.columns([1, 1])
 with hdr1:
@@ -451,13 +500,15 @@ col_in, col_out = st.columns([1, 1])
 
 with col_in:
     source_text = st.text_area(
-        "",
+        "Input text",
         height=BOX_HEIGHT_PX,
         placeholder="Example: Photosynthesis is the process used by plants to convert light energy into chemical energy...",
         key="source_text",
         label_visibility="collapsed",   # IMPORTANT: removes label space to align perfectly
         on_change=reset_result
     )
+    current_len = len(source_text or "")
+    st.caption(f"{current_len:,} / {MAX_INPUT_CHARS:,} characters")
 
 with col_out:
     result = st.session_state["result"]
@@ -475,7 +526,16 @@ with col_out:
 
 # Action button
 st.markdown("")
-if st.button("✨ Generate Support", type="primary"):
+action_col, clear_col = st.columns([1, 1])
+with action_col:
+    generate_clicked = st.button("✨ Generate Support", type="primary")
+with clear_col:
+    if st.button("🧹 Clear", type="secondary"):
+        st.session_state["source_text"] = ""
+        reset_result()
+        st.rerun()
+
+if generate_clicked:
     if not source_text or not source_text.strip():
         st.warning("⚠️ Please paste some text first.")
     elif len(source_text) > MAX_INPUT_CHARS:
@@ -516,45 +576,56 @@ if st.button("✨ Generate Support", type="primary"):
 # Outputs
 result = st.session_state["result"]
 
-st.subheader(f"🌍 Full Translation of Input Text ({target_lang_ui})")
-if result is None:
-    st.caption("Generate support first. The translation will appear here.")
-else:
-    st.info(result.get("full_translation") or "(No translation returned)")
-
 st.divider()
-st.subheader(f"🔑 Vocabulary ({target_lang_ui})")
+tabs = st.tabs(
+    [
+        f"🌍 Translation ({target_lang_ui})",
+        f"🔑 Vocabulary ({target_lang_ui})",
+        "✅ Comprehension Check",
+    ]
+)
 
-if result is None:
-    st.caption("Generate support first. Vocabulary will appear here.")
-else:
-    df_vocab = pd.DataFrame(result.get("vocabulary", []))
-    expected_cols = ["word", "definition", "translation_word", "translation_definition"]
-    for c in expected_cols:
-        if c not in df_vocab.columns:
-            df_vocab[c] = ""
-    df_vocab = df_vocab[expected_cols].rename(columns={
-        "word": "Word",
-        "definition": "English Definition",
-        "translation_word": f"Word Translation ({target_lang_ui})",
-        "translation_definition": f"Definition Translation ({target_lang_ui})",
-    })
-    st.dataframe(df_vocab, hide_index=True, use_container_width=True)
+with tabs[0]:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    if result is None:
+        st.caption("Generate support first. The translation will appear here.")
+    else:
+        st.info(result.get("full_translation") or "(No translation returned)")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.divider()
-st.subheader("✅ Comprehension Check")
+with tabs[1]:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    if result is None:
+        st.caption("Generate support first. Vocabulary will appear here.")
+    else:
+        df_vocab = pd.DataFrame(result.get("vocabulary", []))
+        expected_cols = ["word", "definition", "translation_word", "translation_definition"]
+        for c in expected_cols:
+            if c not in df_vocab.columns:
+                df_vocab[c] = ""
+        df_vocab = df_vocab[expected_cols].rename(columns={
+            "word": "Word",
+            "definition": "English Definition",
+            "translation_word": f"Word Translation ({target_lang_ui})",
+            "translation_definition": f"Definition Translation ({target_lang_ui})",
+        })
+        st.dataframe(df_vocab, hide_index=True, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-if result is None:
-    st.caption("Generate support first. Questions will appear here.")
-else:
-    qs = result.get("questions", [])
-    counter = 0
-    for qa in qs:
-        q = (qa.get("question") or "").strip()
-        a = (qa.get("answer") or "").strip()
-        if not q:
-            continue
-        counter += 1
-        st.markdown(f"**Q{counter}. {q}**")
-        with st.expander("Show suggested answer"):
-            st.write(a if a else "(No answer returned)")
+with tabs[2]:
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    if result is None:
+        st.caption("Generate support first. Questions will appear here.")
+    else:
+        qs = result.get("questions", [])
+        counter = 0
+        for qa in qs:
+            q = (qa.get("question") or "").strip()
+            a = (qa.get("answer") or "").strip()
+            if not q:
+                continue
+            counter += 1
+            st.markdown(f"**Q{counter}. {q}**")
+            with st.expander("Show suggested answer"):
+                st.write(a if a else "(No answer returned)")
+    st.markdown("</div>", unsafe_allow_html=True)
