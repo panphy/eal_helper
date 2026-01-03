@@ -6,6 +6,7 @@ import re
 import html
 import jsonschema
 from jsonschema import ValidationError
+import time
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -226,17 +227,27 @@ INPUT_TEXT:
                 "including exactly 5 vocabulary items and exactly 3 questions. "
                 "No extra keys, no markdown."
             ),
+            (
+                "Return ONLY valid JSON. Do not include any extra text outside the JSON "
+                "object. The JSON must match the required schema exactly."
+            ),
         ]
         data = None
         last_error: Exception | None = None
 
         for attempt, system_message in enumerate(system_messages, start=1):
             try:
+                user_prompt = prompt
+                if attempt == len(system_messages):
+                    user_prompt = (
+                        "Return ONLY valid JSON; do not include text outside JSON.\n\n"
+                        f"{prompt}"
+                    )
                 response = client.chat.completions.create(
                     model="gpt-5-mini",
                     messages=[
                         {"role": "system", "content": system_message},
-                        {"role": "user", "content": prompt}
+                        {"role": "user", "content": user_prompt}
                     ],
                     response_format={"type": "json_object"}
                 )
@@ -252,6 +263,7 @@ INPUT_TEXT:
                 data = None
                 if attempt == len(system_messages):
                     break
+                time.sleep(0.5)
 
         if last_error is not None:
             raise ValueError(
