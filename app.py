@@ -705,15 +705,12 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     if result is None:
         st.caption("Generate support first. The translation will appear here.")
     else:
         st.info(result.get("full_translation") or "(No translation returned)")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[1]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     if result is None:
         st.caption("Generate support first. Vocabulary will appear here.")
     else:
@@ -729,10 +726,8 @@ with tabs[1]:
             "translation_definition": f"Definition Translation ({target_lang_ui})",
         })
         st.dataframe(df_vocab, hide_index=True, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[2]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     if result is None:
         st.caption("Generate support first. Questions will appear here.")
     else:
@@ -747,4 +742,3 @@ with tabs[2]:
             st.markdown(f"**Q{counter}. {q}**")
             with st.expander("Show suggested answer"):
                 st.write(a if a else "(No answer returned)")
-    st.markdown("</div>", unsafe_allow_html=True)
