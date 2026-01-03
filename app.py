@@ -98,6 +98,9 @@ def reset_result() -> None:
 class TranslationConstraintError(ValueError):
     pass
 
+class ProtectedTermError(ValueError):
+    pass
+
 # -------------------------
 # API Key check (silent)
 # -------------------------
@@ -259,6 +262,7 @@ INPUT_TEXT:
         ]
         data = None
         last_error: Exception | None = None
+        protected_retry_used = False
 
         for attempt, system_message in enumerate(system_messages, start=1):
             try:
@@ -281,6 +285,7 @@ INPUT_TEXT:
                 if not isinstance(data, dict):
                     raise ValueError("Model returned non-object JSON.")
                 jsonschema.validate(instance=data, schema=response_schema)
+                simplified = safe_get_str(data, "simplified_text")
                 full_translation = safe_get_str(data, "full_translation")
                 vocab = safe_get_list(data, "vocabulary")
                 translation_definitions = []
@@ -289,6 +294,12 @@ INPUT_TEXT:
                         translation_definitions.append(
                             safe_get_str(item, "translation_definition")
                         )
+                missing_terms = [term for term in protected if term not in simplified]
+                if missing_terms:
+                    raise ProtectedTermError(
+                        "Protected terms missing from simplified_text: "
+                        + ", ".join(missing_terms)
+                    )
                 violation_fields = []
                 if is_likely_english(full_translation):
                     violation_fields.append("full_translation")
@@ -307,11 +318,24 @@ INPUT_TEXT:
             except (json.JSONDecodeError, ValidationError, ValueError) as exc:
                 last_error = exc
                 data = None
+                if isinstance(exc, ProtectedTermError):
+                    if protected_retry_used or attempt == len(system_messages):
+                        break
+                    protected_retry_used = True
+                    time.sleep(0.5)
+                    continue
                 if attempt == len(system_messages):
                     break
                 time.sleep(0.5)
 
         if last_error is not None:
+            if isinstance(last_error, ProtectedTermError):
+                raise ValueError(
+                    "Protected terms must appear verbatim in the simplified text. "
+                    "Missing terms: " + str(last_error).replace(
+                        "Protected terms missing from simplified_text: ", ""
+                    )
+                ) from last_error
             if isinstance(last_error, TranslationConstraintError):
                 raise ValueError(
                     "Translation constraint failure: please ensure the full translation "
