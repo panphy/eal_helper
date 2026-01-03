@@ -199,7 +199,7 @@ st.markdown(
       }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
-        padding-top: 2.2rem;
+        padding-top: 4.5rem;
       }}
     </style>
     """,
