@@ -151,55 +151,129 @@ st.markdown(
     <style>
       :root {{
         color-scheme: light;
+        --color-bg: #f8fafc;
+        --color-surface: #ffffff;
+        --color-surface-muted: #f1f5f9;
+        --color-border: rgba(15, 23, 42, 0.12);
+        --color-border-strong: rgba(15, 23, 42, 0.2);
+        --color-text: #0f172a;
+        --color-text-muted: rgba(15, 23, 42, 0.62);
+        --color-accent: #1d4ed8;
+        --color-accent-soft: rgba(37, 99, 235, 0.12);
+        --success-surface: #e8f5e9;
+        --success-text: #1b5e20;
+        --success-border: rgba(27, 94, 32, 0.28);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --shadow-sm: 0 6px 18px rgba(15, 23, 42, 0.08);
+        --shadow-md: 0 10px 26px rgba(15, 23, 42, 0.12);
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --font-size-1: 0.85rem;
+        --font-size-2: 1rem;
+        --font-size-3: 1.25rem;
+        --font-size-4: 1.9rem;
       }}
-      .app-hero {{
-        background: linear-gradient(120deg, #f5f7ff, #eef9f2);
-        border: 1px solid rgba(45, 78, 120, 0.08);
-        border-radius: 16px;
-        padding: 18px 20px;
-        margin-bottom: 1rem;
+      .stack {{
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
       }}
-      .app-hero h1 {{
-        margin-bottom: 0.2rem;
-        font-size: 2rem;
+      .row {{
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2);
       }}
-      .app-hero p {{
+      .row-between {{
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
+      }}
+      .card {{
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        box-shadow: var(--shadow-sm);
+      }}
+      .card:hover {{
+        border-color: var(--color-border-strong);
+        box-shadow: var(--shadow-md);
+      }}
+      .card-header {{
+        margin-bottom: var(--space-2);
+      }}
+      .card-body {{
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+      }}
+      .title {{
         margin: 0;
-        color: rgba(18, 18, 18, 0.72);
+        font-size: var(--font-size-4);
+        font-weight: 700;
+        color: var(--color-text);
       }}
-      .section-card {{
-        background: #ffffff;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 14px;
-        padding: 14px 16px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      .subtitle {{
+        margin: 0;
+        font-size: var(--font-size-2);
+        color: var(--color-text-muted);
       }}
-      .hint-pill {{
-        display: inline-block;
-        padding: 4px 10px;
+      .text-muted {{
+        color: var(--color-text-muted);
+      }}
+      .text-sm {{
+        font-size: var(--font-size-1);
+      }}
+      .pill {{
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        padding: var(--space-1) var(--space-2);
         border-radius: 999px;
-        background: rgba(59, 130, 246, 0.08);
-        color: #1d4ed8;
-        font-size: 0.85rem;
-        margin-right: 6px;
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+        font-size: var(--font-size-1);
+        font-weight: 600;
+        border: 1px solid transparent;
       }}
-      .simplified-box {{
-        background: #e8f5e9;            /* light green */
-        color: #1b5e20;                 /* dark green */
-        border: 1px solid rgba(27, 94, 32, 0.25);
-        border-radius: 12px;
-        padding: 12px 14px;
+      .pill:hover {{
+        border-color: var(--color-accent);
+      }}
+      .box {{
+        background: var(--color-surface-muted);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-3);
+      }}
+      .box-success {{
+        background: var(--success-surface);
+        color: var(--success-text);
+        border-color: var(--success-border);
+      }}
+      .box-scroll {{
         height: {BOX_HEIGHT_PX}px;
         overflow-y: auto;
         white-space: pre-wrap;
-        line-height: 1.35;
+        line-height: 1.4;
       }}
-      .simplified-placeholder {{
+      .text-success-muted {{
         color: rgba(27, 94, 32, 0.75);
+      }}
+      .app-hero {{
+        background: linear-gradient(120deg, #f5f7ff, #eef9f2);
       }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
-        padding-top: 4.5rem;
+        padding-top: var(--space-6);
       }}
     </style>
     """,
@@ -466,9 +540,13 @@ if not isinstance(default_level, str) or default_level not in LEVEL_OPTIONS:
 # -------------------------
 st.markdown(
     """
-    <div class="app-hero">
-      <h1>🎓 Academic Text Helper</h1>
-      <p>Paste a passage to get simplified English, a faithful translation, vocabulary support, and comprehension checks in one place.</p>
+    <div class="card app-hero stack">
+      <div class="card-header">
+        <h1 class="title">🎓 Academic Text Helper</h1>
+      </div>
+      <div class="card-body">
+        <p class="subtitle">Paste a passage to get simplified English, a faithful translation, vocabulary support, and comprehension checks in one place.</p>
+      </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -514,8 +592,10 @@ protected_terms = parse_protected_terms(protected_raw)
 status_left, status_right = st.columns([1, 1])
 with status_left:
     st.markdown(
-        f'<span class="hint-pill">CEFR: {cefr}</span>'
-        f'<span class="hint-pill">Protected terms: {len(protected_terms)}</span>',
+        f'<div class="row">'
+        f'<span class="pill">CEFR: {cefr}</span>'
+        f'<span class="pill">Protected terms: {len(protected_terms)}</span>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 with status_right:
@@ -546,13 +626,17 @@ with col_out:
     result = st.session_state["result"]
     if result is None:
         st.markdown(
-            f'<div class="simplified-box simplified-placeholder">Click <b>Generate Support</b> to see the simplified text.</div>',
+            (
+                f'<div class="box box-success box-scroll text-success-muted">'
+                f'Click <b>Generate Support</b> to see the simplified text.'
+                f'</div>'
+            ),
             unsafe_allow_html=True
         )
     else:
         simp = result.get("simplified_text") or ""
         st.markdown(
-            f'<div class="simplified-box">{html.escape(simp)}</div>',
+            f'<div class="box box-success box-scroll">{html.escape(simp)}</div>',
             unsafe_allow_html=True
         )
 
@@ -618,7 +702,7 @@ tabs = st.tabs(
 )
 
 with tabs[0]:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     if result is None:
         st.caption("Generate support first. The translation will appear here.")
     else:
@@ -626,7 +710,7 @@ with tabs[0]:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[1]:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     if result is None:
         st.caption("Generate support first. Vocabulary will appear here.")
     else:
@@ -645,7 +729,7 @@ with tabs[1]:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tabs[2]:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     if result is None:
         st.caption("Generate support first. Questions will appear here.")
     else:
