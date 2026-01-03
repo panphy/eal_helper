@@ -310,6 +310,13 @@ st.markdown(
         overflow: hidden;
         border: 1px solid var(--color-border);
       }}
+      .ai-overlay-percent {{
+        margin-top: var(--space-2);
+        font-size: var(--font-size-1);
+        color: var(--color-text-muted);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }}
       .ai-overlay-bar {{
         height: 100%;
         width: 40%;
@@ -741,8 +748,30 @@ if generate_clicked:
                     <div class="ai-overlay-progress">
                       <div class="ai-overlay-bar"></div>
                     </div>
+                    <div class="ai-overlay-percent" id="ai-progress-percent">0%</div>
                   </div>
                 </div>
+                <script>
+                  (() => {
+                    const el = document.getElementById("ai-progress-percent");
+                    if (!el || el.dataset.bound === "true") return;
+                    el.dataset.bound = "true";
+                    const target = 95;
+                    let current = 0;
+                    const step = () => {
+                      if (current < target) {
+                        const remaining = target - current;
+                        current += Math.max(1, Math.round(remaining / 15));
+                        if (current > target) current = target;
+                        el.textContent = `${current}%`;
+                      } else {
+                        clearInterval(timer);
+                      }
+                    };
+                    const timer = setInterval(step, 160);
+                    step();
+                  })();
+                </script>
                 """,
                 unsafe_allow_html=True,
             )
