@@ -25,6 +25,6 @@ To keep usage fair and predictable, the app enforces a per-session quota and rat
 
 Tech stack
 
-	•	Backend: Python + Flask
+	•	Backend: Python + Streamlit
 	•	AI: OpenAI API
-	•	Frontend: HTML, CSS, JavaScript (served by Flask templates)
+	•	Frontend: Streamlit components (HTML/CSS rendered by Streamlit)
