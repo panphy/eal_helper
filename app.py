@@ -139,7 +139,9 @@ def render_progress_overlay(percent: int) -> str:
       <div class="ai-overlay-card">
         <div class="ai-overlay-title">AI is working...</div>
         <div class="ai-overlay-progress">
-          <div class="ai-overlay-bar" style="{bar_style}"></div>
+          <div class="ai-overlay-track">
+            <div class="ai-overlay-bar" style="{bar_style}"></div>
+          </div>
           <div class="ai-overlay-ring" style="left: {ring_pos}%"></div>
         </div>
         <div class="ai-overlay-percent">{clamped}%</div>
@@ -328,12 +330,21 @@ st.markdown(
       }}
       .ai-overlay-progress {{
         width: 100%;
+        height: 14px;
+        overflow: visible;
+        position: relative;
+      }}
+      .ai-overlay-track {{
+        width: 100%;
         height: 10px;
         background: var(--color-surface-muted);
         border-radius: 999px;
         overflow: hidden;
         border: 1px solid var(--color-border);
-        position: relative;
+        position: absolute;
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
       }}
       .ai-overlay-percent {{
         margin-top: var(--space-2);
@@ -352,8 +363,8 @@ st.markdown(
       .ai-overlay-ring {{
         position: absolute;
         top: 50%;
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         border: 2px solid rgba(37, 99, 235, 0.35);
         border-top-color: var(--color-accent);
