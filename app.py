@@ -174,6 +174,7 @@ st.markdown(
         --space-4: 16px;
         --space-5: 20px;
         --space-6: 24px;
+        --space-7: 32px;
         --font-size-1: 0.85rem;
         --font-size-2: 1rem;
         --font-size-3: 1.25rem;
@@ -270,10 +271,11 @@ st.markdown(
       }}
       .app-hero {{
         background: linear-gradient(120deg, #f5f7ff, #eef9f2);
+        margin-bottom: var(--space-5);
       }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
-        padding-top: var(--space-6);
+        padding-top: calc(var(--space-7) + 24px);
       }}
     </style>
     """,
