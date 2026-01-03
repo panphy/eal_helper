@@ -7,6 +7,7 @@ import html
 import jsonschema
 from jsonschema import ValidationError
 import time
+from pathlib import Path
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -95,6 +96,29 @@ def parse_protected_terms(raw: str) -> list[str]:
 def reset_result() -> None:
     st.session_state["result"] = None
 
+def load_preferences() -> dict:
+    if not PREFS_PATH.exists():
+        return {}
+    try:
+        data = json.loads(PREFS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+def persist_preferences() -> None:
+    prefs = {
+        "lang_ui": st.session_state.get("lang_ui"),
+        "level_label": st.session_state.get("level_label"),
+    }
+    try:
+        PREFS_PATH.write_text(json.dumps(prefs, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+
+def handle_selection_change() -> None:
+    reset_result()
+    persist_preferences()
+
 class TranslationConstraintError(ValueError):
     pass
 
@@ -120,6 +144,7 @@ MAX_INPUT_CHARS = 4000
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT_MAX_CALLS = 3
 SESSION_QUOTA_MAX_CALLS = 20
+PREFS_PATH = Path(".eal_helper_prefs.json")
 
 st.markdown(
     f"""
@@ -428,6 +453,16 @@ if "call_times" not in st.session_state:
     st.session_state["call_times"] = []
 if "call_count" not in st.session_state:
     st.session_state["call_count"] = 0
+if "lang_ui" not in st.session_state or "level_label" not in st.session_state:
+    saved_prefs = load_preferences()
+    if "lang_ui" not in st.session_state:
+        saved_lang = saved_prefs.get("lang_ui")
+        if isinstance(saved_lang, str) and saved_lang in LANGUAGE_MAP:
+            st.session_state["lang_ui"] = saved_lang
+    if "level_label" not in st.session_state:
+        saved_level = saved_prefs.get("level_label")
+        if isinstance(saved_level, str) and saved_level in LEVEL_OPTIONS:
+            st.session_state["level_label"] = saved_level
 
 # -------------------------
 # Main UI
@@ -454,7 +489,7 @@ with col_ctrl1:
         lang_keys,
         index=lang_index,
         key="lang_ui",
-        on_change=reset_result
+        on_change=handle_selection_change
     )
     target_lang = LANGUAGE_MAP[target_lang_ui]
 
@@ -466,7 +501,7 @@ with col_ctrl2:
         LEVEL_OPTIONS,
         index=level_index,
         key="level_label",
-        on_change=reset_result
+        on_change=handle_selection_change
     )
     cefr = extract_cefr(level_label)
 
