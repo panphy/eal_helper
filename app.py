@@ -277,6 +277,57 @@ st.markdown(
         background: linear-gradient(120deg, #f5f7ff, #eef9f2);
         margin-bottom: var(--space-5);
       }}
+      .ai-overlay {{
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.32);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        pointer-events: all;
+      }}
+      .ai-overlay-card {{
+        width: min(360px, 80vw);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        box-shadow: var(--shadow-md);
+        text-align: center;
+      }}
+      .ai-overlay-title {{
+        font-size: var(--font-size-2);
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: var(--space-3);
+      }}
+      .ai-overlay-progress {{
+        width: 100%;
+        height: 10px;
+        background: var(--color-surface-muted);
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+      }}
+      .ai-overlay-bar {{
+        height: 100%;
+        width: 40%;
+        background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), var(--color-accent), rgba(37, 99, 235, 0.2));
+        animation: ai-progress 1.2s ease-in-out infinite;
+        border-radius: 999px;
+      }}
+      @keyframes ai-progress {{
+        0% {{
+          transform: translateX(-60%);
+        }}
+        50% {{
+          transform: translateX(60%);
+        }}
+        100% {{
+          transform: translateX(160%);
+        }}
+      }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
         padding-top: calc(var(--space-7) + 24px);
@@ -533,6 +584,8 @@ if "call_times" not in st.session_state:
     st.session_state["call_times"] = []
 if "call_count" not in st.session_state:
     st.session_state["call_count"] = 0
+if "is_processing" not in st.session_state:
+    st.session_state["is_processing"] = False
 saved_prefs = load_preferences()
 default_lang = saved_prefs.get("lang_ui") if isinstance(saved_prefs, dict) else None
 if not isinstance(default_lang, str) or default_lang not in LANGUAGE_MAP:
@@ -679,15 +732,32 @@ if generate_clicked:
                 f"⚠️ Too many requests. Please wait {wait_seconds} seconds and try again."
             )
         else:
+            st.session_state["is_processing"] = True
+            st.markdown(
+                """
+                <div class="ai-overlay">
+                  <div class="ai-overlay-card">
+                    <div class="ai-overlay-title">AI is working...</div>
+                    <div class="ai-overlay-progress">
+                      <div class="ai-overlay-bar"></div>
+                    </div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
             st.session_state["call_times"] = call_times + [now]
             st.session_state["call_count"] += 1
-            with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
-                data = get_scaffolded_content(
-                    text=source_text.strip(),
-                    language=target_lang,
-                    cefr_level=cefr,
-                    protected=protected_terms
-                )
+            try:
+                with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
+                    data = get_scaffolded_content(
+                        text=source_text.strip(),
+                        language=target_lang,
+                        cefr_level=cefr,
+                        protected=protected_terms
+                    )
+            finally:
+                st.session_state["is_processing"] = False
             if data:
                 st.session_state["result"] = data
                 st.rerun()
