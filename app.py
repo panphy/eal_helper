@@ -7,6 +7,7 @@ import html
 import jsonschema
 from jsonschema import ValidationError
 import time
+import time
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
@@ -117,6 +118,9 @@ client = get_client(api_key)
 # -------------------------
 BOX_HEIGHT_PX = 260
 MAX_INPUT_CHARS = 4000
+RATE_LIMIT_WINDOW_SECONDS = 60
+RATE_LIMIT_MAX_CALLS = 3
+SESSION_QUOTA_MAX_CALLS = 20
 
 st.markdown(
     f"""
@@ -387,6 +391,10 @@ INPUT_TEXT:
 # -------------------------
 if "result" not in st.session_state:
     st.session_state["result"] = None
+if "call_times" not in st.session_state:
+    st.session_state["call_times"] = []
+if "call_count" not in st.session_state:
+    st.session_state["call_count"] = 0
 
 # -------------------------
 # Main UI
@@ -473,16 +481,37 @@ if st.button("✨ Generate Support", type="primary"):
     elif len(source_text) > MAX_INPUT_CHARS:
         st.warning(f"⚠️ Input is too long. Please keep it under {MAX_INPUT_CHARS:,} characters.")
     else:
-        with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
-            data = get_scaffolded_content(
-                text=source_text.strip(),
-                language=target_lang,
-                cefr_level=cefr,
-                protected=protected_terms
+        now = time.time()
+        call_times = [
+            t for t in st.session_state["call_times"]
+            if now - t < RATE_LIMIT_WINDOW_SECONDS
+        ]
+        st.session_state["call_times"] = call_times
+
+        if st.session_state["call_count"] >= SESSION_QUOTA_MAX_CALLS:
+            st.warning(
+                "⚠️ Session quota reached. Please refresh later or start a new session."
             )
-        if data:
-            st.session_state["result"] = data
-            st.rerun()
+        elif len(call_times) >= RATE_LIMIT_MAX_CALLS:
+            wait_seconds = int(
+                RATE_LIMIT_WINDOW_SECONDS - (now - min(call_times))
+            )
+            st.warning(
+                f"⚠️ Too many requests. Please wait {wait_seconds} seconds and try again."
+            )
+        else:
+            st.session_state["call_times"] = call_times + [now]
+            st.session_state["call_count"] += 1
+            with st.spinner(f"Simplifying to {cefr} and translating to {target_lang_ui}..."):
+                data = get_scaffolded_content(
+                    text=source_text.strip(),
+                    language=target_lang,
+                    cefr_level=cefr,
+                    protected=protected_terms
+                )
+            if data:
+                st.session_state["result"] = data
+                st.rerun()
 
 # Outputs
 result = st.session_state["result"]
