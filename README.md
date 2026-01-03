@@ -18,3 +18,13 @@ EAL students often understand the concept but get blocked by dense vocabulary, l
 Notes
 
 This app uses an OpenAI model to generate outputs. As with any AI tool, it can occasionally simplify too much or miss nuance, so it should be used as a scaffold, not as a substitute for teacher explanations or mark schemes.
+
+AI usage limits
+
+To keep usage fair and predictable, the app enforces a per-session quota and rate limiting for AI requests. Each browser session is limited to a fixed number of AI calls; once the quota is reached, the app will ask the user to start a new session. Requests are also throttled to prevent rapid, repeated calls in a short time window.
+
+Tech stack
+
+	•	Backend: Python + Flask
+	•	AI: OpenAI API
+	•	Frontend: HTML, CSS, JavaScript (served by Flask templates)
