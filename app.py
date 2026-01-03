@@ -725,7 +725,7 @@ with tabs[1]:
             "translation_word": f"Word Translation ({target_lang_ui})",
             "translation_definition": f"Definition Translation ({target_lang_ui})",
         })
-        st.dataframe(df_vocab, hide_index=True, use_container_width=True)
+        st.dataframe(df_vocab, hide_index=True, width="stretch")
 
 with tabs[2]:
     if result is None:
