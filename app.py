@@ -453,16 +453,13 @@ if "call_times" not in st.session_state:
     st.session_state["call_times"] = []
 if "call_count" not in st.session_state:
     st.session_state["call_count"] = 0
-if "lang_ui" not in st.session_state or "level_label" not in st.session_state:
-    saved_prefs = load_preferences()
-    if "lang_ui" not in st.session_state:
-        saved_lang = saved_prefs.get("lang_ui")
-        if isinstance(saved_lang, str) and saved_lang in LANGUAGE_MAP:
-            st.session_state["lang_ui"] = saved_lang
-    if "level_label" not in st.session_state:
-        saved_level = saved_prefs.get("level_label")
-        if isinstance(saved_level, str) and saved_level in LEVEL_OPTIONS:
-            st.session_state["level_label"] = saved_level
+saved_prefs = load_preferences()
+default_lang = saved_prefs.get("lang_ui") if isinstance(saved_prefs, dict) else None
+if not isinstance(default_lang, str) or default_lang not in LANGUAGE_MAP:
+    default_lang = "Arabic"
+default_level = saved_prefs.get("level_label") if isinstance(saved_prefs, dict) else None
+if not isinstance(default_level, str) or default_level not in LEVEL_OPTIONS:
+    default_level = "Intermediate (B1)"
 
 # -------------------------
 # Main UI
@@ -482,7 +479,7 @@ col_ctrl1, col_ctrl2 = st.columns([1.1, 1])
 
 with col_ctrl1:
     lang_keys = list(LANGUAGE_MAP.keys())
-    current_lang = st.session_state.get("lang_ui", "Arabic")
+    current_lang = st.session_state.get("lang_ui", default_lang)
     lang_index = lang_keys.index(current_lang) if current_lang in lang_keys else 0
     target_lang_ui = st.selectbox(
         "Translation Language",
@@ -494,7 +491,7 @@ with col_ctrl1:
     target_lang = LANGUAGE_MAP[target_lang_ui]
 
 with col_ctrl2:
-    current_level = st.session_state.get("level_label", "Intermediate (B1)")
+    current_level = st.session_state.get("level_label", default_level)
     level_index = LEVEL_OPTIONS.index(current_level) if current_level in LEVEL_OPTIONS else 1
     level_label = st.selectbox(
         "English Level (Simplification)",
