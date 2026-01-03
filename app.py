@@ -431,11 +431,13 @@ if result is None:
     st.caption("Generate support first. Questions will appear here.")
 else:
     qs = result.get("questions", [])
-    for i, qa in enumerate(qs, start=1):
+    counter = 0
+    for qa in qs:
         q = (qa.get("question") or "").strip()
         a = (qa.get("answer") or "").strip()
         if not q:
             continue
-        st.markdown(f"**Q{i}. {q}**")
+        counter += 1
+        st.markdown(f"**Q{counter}. {q}**")
         with st.expander("Show suggested answer"):
             st.write(a if a else "(No answer returned)")
