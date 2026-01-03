@@ -126,6 +126,7 @@ def handle_selection_change() -> None:
 
 def render_progress_overlay(percent: int) -> str:
     clamped = max(0, min(percent, 100))
+    ring_pos = max(4, min(clamped, 96))
     shade = int(120 + (clamped / 100) * 100)
     shade_green = min(shade + 40, 255)
     bar_style = (
@@ -139,6 +140,7 @@ def render_progress_overlay(percent: int) -> str:
         <div class="ai-overlay-title">AI is working...</div>
         <div class="ai-overlay-progress">
           <div class="ai-overlay-bar" style="{bar_style}"></div>
+          <div class="ai-overlay-ring" style="left: {ring_pos}%"></div>
         </div>
         <div class="ai-overlay-percent">{clamped}%</div>
       </div>
@@ -331,6 +333,7 @@ st.markdown(
         border-radius: 999px;
         overflow: hidden;
         border: 1px solid var(--color-border);
+        position: relative;
       }}
       .ai-overlay-percent {{
         margin-top: var(--space-2);
@@ -345,6 +348,27 @@ st.markdown(
         background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), var(--color-accent));
         border-radius: 999px;
         transition: width 180ms ease-out, background 300ms ease-out;
+      }}
+      .ai-overlay-ring {{
+        position: absolute;
+        top: 50%;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid rgba(37, 99, 235, 0.35);
+        border-top-color: var(--color-accent);
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 6px rgba(37, 99, 235, 0.35);
+        animation: ring-spin 0.9s linear infinite, ring-pulse 1.6s ease-in-out infinite;
+        background: rgba(255, 255, 255, 0.7);
+      }}
+      @keyframes ring-spin {{
+        from {{ transform: translate(-50%, -50%) rotate(0deg); }}
+        to {{ transform: translate(-50%, -50%) rotate(360deg); }}
+      }}
+      @keyframes ring-pulse {{
+        0%, 100% {{ box-shadow: 0 0 6px rgba(37, 99, 235, 0.35); }}
+        50% {{ box-shadow: 0 0 10px rgba(37, 99, 235, 0.6); }}
       }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
@@ -771,18 +795,18 @@ if generate_clicked:
                     current = 0
                     while current < 95 and not future.done():
                         remaining = 95 - current
-                        current += max(1, round(remaining / 15))
+                        current += max(1, round(remaining / 24))
                         overlay_placeholder.markdown(
                             render_progress_overlay(current),
                             unsafe_allow_html=True,
                         )
-                        time.sleep(0.16)
+                        time.sleep(0.28)
                     while not future.done():
                         overlay_placeholder.markdown(
                             render_progress_overlay(95),
                             unsafe_allow_html=True,
                         )
-                        time.sleep(0.2)
+                        time.sleep(0.35)
                     data = future.result()
                     overlay_placeholder.markdown(
                         render_progress_overlay(100),
