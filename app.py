@@ -494,7 +494,7 @@ with col_ctrl2:
     current_level = st.session_state.get("level_label", default_level)
     level_index = LEVEL_OPTIONS.index(current_level) if current_level in LEVEL_OPTIONS else 1
     level_label = st.selectbox(
-        "English Level (Simplification)",
+        "Your English Level",
         LEVEL_OPTIONS,
         index=level_index,
         key="level_label",
