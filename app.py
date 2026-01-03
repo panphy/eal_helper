@@ -52,6 +52,28 @@ def safe_get_list(d: dict, key: str) -> list:
     v = d.get(key, [])
     return v if isinstance(v, list) else []
 
+ENGLISH_STOPWORDS = {
+    "the", "and", "of", "to", "is", "in", "that", "for", "on", "with", "as", "are",
+    "was", "were", "be", "by", "or", "from", "at", "this", "which", "an", "not",
+    "have", "has", "had", "it", "its", "their", "there", "than", "but", "if",
+}
+
+def is_likely_english(text: str) -> bool:
+    # Heuristic: only flag likely English when Latin-script words dominate and common
+    # English stopwords appear, so non-Latin scripts are not penalized.
+    if not text:
+        return False
+    latin_words = re.findall(r"[A-Za-z]+", text)
+    all_words = re.findall(r"\w+", text, flags=re.UNICODE)
+    if not latin_words or not all_words:
+        return False
+    english_hits = sum(1 for w in latin_words if w.lower() in ENGLISH_STOPWORDS)
+    latin_ratio = len(latin_words) / len(all_words)
+    english_ratio = english_hits / len(latin_words)
+    return (english_hits >= 2 and english_ratio >= 0.2 and latin_ratio >= 0.6) or (
+        english_hits >= 1 and latin_ratio >= 0.85 and len(latin_words) >= 6
+    )
+
 def parse_protected_terms(raw: str) -> list[str]:
     if not raw:
         return []
@@ -72,6 +94,9 @@ def parse_protected_terms(raw: str) -> list[str]:
 
 def reset_result() -> None:
     st.session_state["result"] = None
+
+class TranslationConstraintError(ValueError):
+    pass
 
 # -------------------------
 # API Key check (silent)
@@ -256,6 +281,27 @@ INPUT_TEXT:
                 if not isinstance(data, dict):
                     raise ValueError("Model returned non-object JSON.")
                 jsonschema.validate(instance=data, schema=response_schema)
+                full_translation = safe_get_str(data, "full_translation")
+                vocab = safe_get_list(data, "vocabulary")
+                translation_definitions = []
+                for item in vocab:
+                    if isinstance(item, dict):
+                        translation_definitions.append(
+                            safe_get_str(item, "translation_definition")
+                        )
+                violation_fields = []
+                if is_likely_english(full_translation):
+                    violation_fields.append("full_translation")
+                for index, definition in enumerate(translation_definitions, start=1):
+                    if is_likely_english(definition):
+                        violation_fields.append(
+                            f"vocabulary[{index}].translation_definition"
+                        )
+                if violation_fields:
+                    raise TranslationConstraintError(
+                        "Translation appears to contain English in: "
+                        + ", ".join(violation_fields)
+                    )
                 last_error = None
                 break
             except (json.JSONDecodeError, ValidationError, ValueError) as exc:
@@ -266,6 +312,12 @@ INPUT_TEXT:
                 time.sleep(0.5)
 
         if last_error is not None:
+            if isinstance(last_error, TranslationConstraintError):
+                raise ValueError(
+                    "Translation constraint failure: please ensure the full translation "
+                    f"and vocabulary definitions are entirely in {language} with no "
+                    "English words."
+                ) from last_error
             raise ValueError(
                 "Model response did not match the expected format after a retry. "
                 "Please try again."
