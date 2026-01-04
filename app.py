@@ -193,6 +193,14 @@ st.markdown(
         --success-surface: #e8f5e9;
         --success-text: #1b5e20;
         --success-border: rgba(27, 94, 32, 0.28);
+        --success-text-muted: rgba(27, 94, 32, 0.78);
+        --info-surface: rgba(37, 99, 235, 0.08);
+        --info-border: rgba(37, 99, 235, 0.25);
+        --info-text: #1e3a8a;
+        --warning-surface: rgba(217, 119, 6, 0.12);
+        --warning-border: rgba(217, 119, 6, 0.3);
+        --warning-text: #92400e;
+        --overlay-bg: rgba(15, 23, 42, 0.32);
         --radius-sm: 8px;
         --radius-md: 12px;
         --radius-lg: 16px;
@@ -224,6 +232,14 @@ st.markdown(
           --success-surface: rgba(22, 163, 74, 0.18);
           --success-text: #86efac;
           --success-border: rgba(134, 239, 172, 0.35);
+          --success-text-muted: rgba(134, 239, 172, 0.82);
+          --info-surface: rgba(96, 165, 250, 0.16);
+          --info-border: rgba(96, 165, 250, 0.45);
+          --info-text: #dbeafe;
+          --warning-surface: rgba(251, 191, 36, 0.18);
+          --warning-border: rgba(251, 191, 36, 0.45);
+          --warning-text: #fde68a;
+          --overlay-bg: rgba(2, 6, 23, 0.55);
           --shadow-sm: 0 6px 18px rgba(2, 6, 23, 0.55);
           --shadow-md: 0 12px 30px rgba(2, 6, 23, 0.6);
         }}
@@ -315,7 +331,7 @@ st.markdown(
         line-height: 1.4;
       }}
       .text-success-muted {{
-        color: rgba(27, 94, 32, 0.75);
+        color: var(--success-text-muted);
       }}
       .app-hero {{
         background: linear-gradient(120deg, #f5f7ff, #eef9f2);
@@ -333,10 +349,50 @@ st.markdown(
       .stMarkdown, .stCaption, .stTextInput label, .stSelectbox label, .stTextArea label, .stCheckbox label {{
         color: var(--color-text);
       }}
+      .stCaption {{
+        color: var(--color-text-muted);
+      }}
+      .stTextArea textarea,
+      .stTextInput input,
+      .stSelectbox div[data-baseweb="select"] > div {{
+        background: var(--color-surface);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+      }}
+      .stTextArea textarea::placeholder,
+      .stTextInput input::placeholder {{
+        color: var(--color-text-muted);
+      }}
+      .stSelectbox div[data-baseweb="select"] span {{
+        color: var(--color-text);
+      }}
+      div[data-testid="stAlert"] {{
+        background: var(--info-surface);
+        border: 1px solid var(--info-border);
+        color: var(--info-text);
+      }}
+      div[data-testid="stAlert"] svg {{
+        color: var(--info-text);
+      }}
+      div[data-testid="stAlert"][data-alert-type="warning"] {{
+        background: var(--warning-surface);
+        border-color: var(--warning-border);
+        color: var(--warning-text);
+      }}
+      div[data-testid="stAlert"][data-alert-type="warning"] svg {{
+        color: var(--warning-text);
+      }}
+      div[data-testid="stDataFrame"] {{
+        color: var(--color-text);
+      }}
+      div[data-testid="stDataFrame"] thead,
+      div[data-testid="stDataFrame"] tbody {{
+        color: var(--color-text);
+      }}
       .ai-overlay {{
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, 0.32);
+        background: var(--overlay-bg);
         display: flex;
         align-items: center;
         justify-content: center;
