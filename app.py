@@ -321,8 +321,27 @@ st.markdown(
       .stCaption {{
         color: var(--color-text-muted);
       }}
+      .stTextInput div[data-baseweb="input"],
+      .stTextArea div[data-baseweb="textarea"] {{
+        background: var(--color-surface);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-sizing: border-box;
+        overflow: hidden;
+        background-clip: padding-box;
+        padding: 0;
+        margin: 0;
+      }}
       .stTextInput div[data-baseweb="input"] > div,
-      .stTextArea div[data-baseweb="textarea"] > div,
+      .stTextArea div[data-baseweb="textarea"] > div {{
+        background: transparent;
+        border: none;
+        border-radius: inherit;
+        box-sizing: border-box;
+        padding: 0;
+        margin: 0;
+      }}
       .stSelectbox div[data-baseweb="select"] > div {{
         background: var(--color-surface);
         color: var(--color-text);
@@ -337,9 +356,11 @@ st.markdown(
         background: transparent;
         color: var(--color-text);
         border: none;
-        border-radius: var(--radius-md);
+        border-radius: inherit;
         box-sizing: border-box;
         padding: var(--space-3);
+        margin: 0;
+        width: 100%;
       }}
       .stTextArea textarea::placeholder,
       .stTextInput input::placeholder {{
