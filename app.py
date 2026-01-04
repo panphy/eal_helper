@@ -329,6 +329,8 @@ st.markdown(
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         box-sizing: border-box;
+        overflow: hidden;
+        background-clip: padding-box;
       }}
       .stTextArea textarea,
       .stTextInput input {{
