@@ -180,27 +180,27 @@ st.markdown(
     f"""
     <style>
       :root {{
-        color-scheme: light dark;
-        --color-bg: #f8fafc;
+        color-scheme: light;
+        --color-bg: #f4f6fb;
         --color-surface: #ffffff;
-        --color-surface-muted: #f1f5f9;
-        --color-border: rgba(15, 23, 42, 0.12);
-        --color-border-strong: rgba(15, 23, 42, 0.2);
-        --color-text: #0f172a;
-        --color-text-muted: rgba(15, 23, 42, 0.62);
-        --color-accent: #1d4ed8;
-        --color-accent-soft: rgba(37, 99, 235, 0.12);
-        --success-surface: #e8f5e9;
-        --success-text: #1b5e20;
-        --success-border: rgba(27, 94, 32, 0.28);
-        --success-text-muted: rgba(27, 94, 32, 0.78);
-        --info-surface: rgba(37, 99, 235, 0.08);
-        --info-border: rgba(37, 99, 235, 0.25);
-        --info-text: #1e3a8a;
-        --warning-surface: rgba(217, 119, 6, 0.12);
+        --color-surface-muted: #eef2f8;
+        --color-border: rgba(23, 37, 84, 0.12);
+        --color-border-strong: rgba(23, 37, 84, 0.2);
+        --color-text: #0b1a33;
+        --color-text-muted: rgba(11, 26, 51, 0.62);
+        --color-accent: #2f6bff;
+        --color-accent-soft: rgba(47, 107, 255, 0.14);
+        --success-surface: #e6f6ed;
+        --success-text: #0f5132;
+        --success-border: rgba(15, 81, 50, 0.28);
+        --success-text-muted: rgba(15, 81, 50, 0.72);
+        --info-surface: rgba(47, 107, 255, 0.1);
+        --info-border: rgba(47, 107, 255, 0.25);
+        --info-text: #18349a;
+        --warning-surface: rgba(217, 119, 6, 0.1);
         --warning-border: rgba(217, 119, 6, 0.3);
-        --warning-text: #92400e;
-        --overlay-bg: rgba(15, 23, 42, 0.32);
+        --warning-text: #8a3d00;
+        --overlay-bg: rgba(11, 26, 51, 0.24);
         --radius-sm: 8px;
         --radius-md: 12px;
         --radius-lg: 16px;
@@ -217,32 +217,6 @@ st.markdown(
         --font-size-2: 1rem;
         --font-size-3: 1.25rem;
         --font-size-4: 1.9rem;
-      }}
-      @media (prefers-color-scheme: dark) {{
-        :root {{
-          --color-bg: #0b1120;
-          --color-surface: #111827;
-          --color-surface-muted: #1f2937;
-          --color-border: rgba(148, 163, 184, 0.28);
-          --color-border-strong: rgba(148, 163, 184, 0.45);
-          --color-text: #f8fafc;
-          --color-text-muted: rgba(226, 232, 240, 0.75);
-          --color-accent: #60a5fa;
-          --color-accent-soft: rgba(96, 165, 250, 0.2);
-          --success-surface: rgba(22, 163, 74, 0.18);
-          --success-text: #86efac;
-          --success-border: rgba(134, 239, 172, 0.35);
-          --success-text-muted: rgba(134, 239, 172, 0.82);
-          --info-surface: rgba(96, 165, 250, 0.16);
-          --info-border: rgba(96, 165, 250, 0.45);
-          --info-text: #dbeafe;
-          --warning-surface: rgba(251, 191, 36, 0.18);
-          --warning-border: rgba(251, 191, 36, 0.45);
-          --warning-text: #fde68a;
-          --overlay-bg: rgba(2, 6, 23, 0.55);
-          --shadow-sm: 0 6px 18px rgba(2, 6, 23, 0.55);
-          --shadow-md: 0 12px 30px rgba(2, 6, 23, 0.6);
-        }}
       }}
       .stack {{
         display: flex;
@@ -334,13 +308,8 @@ st.markdown(
         color: var(--success-text-muted);
       }}
       .app-hero {{
-        background: linear-gradient(120deg, #f5f7ff, #eef9f2);
+        background: linear-gradient(120deg, #f0f4ff, #ecf8f1);
         margin-bottom: var(--space-5);
-      }}
-      @media (prefers-color-scheme: dark) {{
-        .app-hero {{
-          background: linear-gradient(120deg, rgba(15, 23, 42, 0.9), rgba(3, 46, 46, 0.9));
-        }}
       }}
       .stApp {{
         background-color: var(--color-bg);
@@ -452,10 +421,10 @@ st.markdown(
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        border: 2px solid rgba(37, 99, 235, 0.35);
+        border: 2px solid rgba(47, 107, 255, 0.35);
         border-top-color: var(--color-accent);
         transform: translate(-50%, -50%);
-        box-shadow: 0 0 6px rgba(37, 99, 235, 0.35);
+        box-shadow: 0 0 6px rgba(47, 107, 255, 0.35);
         animation: ring-spin 0.9s linear infinite, ring-pulse 1.6s ease-in-out infinite;
         background: rgba(255, 255, 255, 0.7);
       }}
@@ -464,9 +433,13 @@ st.markdown(
         to {{ transform: translate(-50%, -50%) rotate(360deg); }}
       }}
       @keyframes ring-pulse {{
-        0%, 100% {{ box-shadow: 0 0 6px rgba(37, 99, 235, 0.35); }}
-        50% {{ box-shadow: 0 0 10px rgba(37, 99, 235, 0.6); }}
+        0%, 100% {{ box-shadow: 0 0 6px rgba(47, 107, 255, 0.35); }}
+        50% {{ box-shadow: 0 0 10px rgba(47, 107, 255, 0.6); }}
       }}
+      #MainMenu {{ visibility: hidden; }}
+      button[data-testid="stMainMenu"] {{ visibility: hidden; }}
+      button[title="View settings"] {{ visibility: hidden; }}
+      button[title="Settings"] {{ visibility: hidden; }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
         padding-top: calc(var(--space-7) + 24px);
