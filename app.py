@@ -255,6 +255,23 @@ st.markdown(
         flex-direction: column;
         gap: var(--space-2);
       }}
+      footer {{
+        position: static;
+        font-size: 15px;
+        text-align: center;
+        padding: 7px;
+        background: transparent;
+        color: #555;
+        margin: 4px 0;
+        width: 100%;
+      }}
+      footer a {{
+        color: #ff5f1f;
+        text-decoration: none;
+      }}
+      footer a:hover {{
+        text-decoration: underline;
+      }}
       .title {{
         margin: 0;
         font-size: var(--font-size-4);
@@ -992,3 +1009,13 @@ with tabs[2]:
             st.markdown(f"**Q{counter}. {q}**")
             with st.expander("Show suggested answer"):
                 st.write(a if a else "(No answer returned)")
+
+st.markdown(
+    """
+    <footer>
+        &copy; <a href="https://panphy.github.io/" target="_blank" rel="noopener noreferrer">PanPhy</a> |
+        <a href="https://buymeacoffee.com/panphy" target="_blank" rel="noopener noreferrer">Support My Projects</a>
+    </footer>
+    """,
+    unsafe_allow_html=True,
+)
