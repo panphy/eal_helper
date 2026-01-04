@@ -321,13 +321,23 @@ st.markdown(
       .stCaption {{
         color: var(--color-text-muted);
       }}
-      .stTextArea textarea,
-      .stTextInput input,
+      .stTextInput div[data-baseweb="input"] > div,
+      .stTextArea div[data-baseweb="textarea"] > div,
       .stSelectbox div[data-baseweb="select"] > div {{
         background: var(--color-surface);
         color: var(--color-text);
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
+        box-sizing: border-box;
+      }}
+      .stTextArea textarea,
+      .stTextInput input {{
+        background: transparent;
+        color: var(--color-text);
+        border: none;
+        border-radius: var(--radius-md);
+        box-sizing: border-box;
+        padding: var(--space-3);
       }}
       .stTextArea textarea::placeholder,
       .stTextInput input::placeholder {{
