@@ -484,9 +484,17 @@ st.markdown(
       button[data-testid="stMainMenu"] {{ visibility: hidden; }}
       button[title="View settings"] {{ visibility: hidden; }}
       button[title="Settings"] {{ visibility: hidden; }}
+      header[data-testid="stHeader"] {{
+        visibility: hidden;
+        height: 0;
+      }}
+      div[data-testid="stToolbar"] {{
+        visibility: hidden;
+        height: 0;
+      }}
       /* Reduce any extra top spacing inside columns */
       .block-container {{
-        padding-top: calc(var(--space-7) + 24px);
+        padding-top: var(--space-6);
       }}
     </style>
     """,
