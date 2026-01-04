@@ -327,6 +327,7 @@ st.markdown(
         background: var(--color-surface);
         color: var(--color-text);
         border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
       }}
       .stTextArea textarea::placeholder,
       .stTextInput input::placeholder {{
@@ -339,6 +340,7 @@ st.markdown(
         background: var(--info-surface);
         border: 1px solid var(--info-border);
         color: var(--info-text);
+        border-radius: var(--radius-md);
       }}
       div[data-testid="stAlert"] svg {{
         color: var(--info-text);
@@ -353,10 +355,19 @@ st.markdown(
       }}
       div[data-testid="stDataFrame"] {{
         color: var(--color-text);
+        border-radius: var(--radius-md);
+        overflow: hidden;
       }}
       div[data-testid="stDataFrame"] thead,
       div[data-testid="stDataFrame"] tbody {{
         color: var(--color-text);
+      }}
+      div[data-testid="stExpander"] {{
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }}
+      .stButton > button {{
+        border-radius: var(--radius-md);
       }}
       .ai-overlay {{
         position: fixed;
