@@ -12,7 +12,7 @@ from pathlib import Path
 
 # --- APP CONFIGURATION ---
 st.set_page_config(
-    page_title="EAL Scaffolder",
+    page_title="EAL Learning Companion",
     page_icon="🎓",
     layout="wide"
 )
@@ -180,7 +180,7 @@ st.markdown(
     f"""
     <style>
       :root {{
-        color-scheme: light;
+        color-scheme: light dark;
         --color-bg: #f8fafc;
         --color-surface: #ffffff;
         --color-surface-muted: #f1f5f9;
@@ -209,6 +209,24 @@ st.markdown(
         --font-size-2: 1rem;
         --font-size-3: 1.25rem;
         --font-size-4: 1.9rem;
+      }}
+      @media (prefers-color-scheme: dark) {{
+        :root {{
+          --color-bg: #0b1120;
+          --color-surface: #111827;
+          --color-surface-muted: #1f2937;
+          --color-border: rgba(148, 163, 184, 0.28);
+          --color-border-strong: rgba(148, 163, 184, 0.45);
+          --color-text: #f8fafc;
+          --color-text-muted: rgba(226, 232, 240, 0.75);
+          --color-accent: #60a5fa;
+          --color-accent-soft: rgba(96, 165, 250, 0.2);
+          --success-surface: rgba(22, 163, 74, 0.18);
+          --success-text: #86efac;
+          --success-border: rgba(134, 239, 172, 0.35);
+          --shadow-sm: 0 6px 18px rgba(2, 6, 23, 0.55);
+          --shadow-md: 0 12px 30px rgba(2, 6, 23, 0.6);
+        }}
       }}
       .stack {{
         display: flex;
@@ -302,6 +320,18 @@ st.markdown(
       .app-hero {{
         background: linear-gradient(120deg, #f5f7ff, #eef9f2);
         margin-bottom: var(--space-5);
+      }}
+      @media (prefers-color-scheme: dark) {{
+        .app-hero {{
+          background: linear-gradient(120deg, rgba(15, 23, 42, 0.9), rgba(3, 46, 46, 0.9));
+        }}
+      }}
+      .stApp {{
+        background-color: var(--color-bg);
+        color: var(--color-text);
+      }}
+      .stMarkdown, .stCaption, .stTextInput label, .stSelectbox label, .stTextArea label, .stCheckbox label {{
+        color: var(--color-text);
       }}
       .ai-overlay {{
         position: fixed;
@@ -654,7 +684,7 @@ st.markdown(
     """
     <div class="card app-hero stack">
       <div class="card-header">
-        <h1 class="title">🎓 Academic Text Helper</h1>
+        <h1 class="title">🎓 EAL Learning Companion</h1>
       </div>
       <div class="card-body">
         <p class="subtitle">Paste a passage to get simplified English, a faithful translation, vocabulary support, and comprehension checks in one place.</p>
