@@ -841,16 +841,10 @@ with status_left:
 with status_right:
     st.caption(f"Max input length: {MAX_INPUT_CHARS:,} characters")
 
-# --- Aligned side-by-side section ---
-hdr1, hdr2 = st.columns([1, 1])
-with hdr1:
-    st.subheader("📝 Input Text")
-with hdr2:
-    st.subheader("📖 Simplified Text (English)")
-
 col_in, col_out = st.columns([1, 1])
 
 with col_in:
+    st.subheader("📝 Input Text")
     source_text = st.text_area(
         "Input text",
         height=BOX_HEIGHT_PX,
@@ -863,6 +857,7 @@ with col_in:
     st.caption(f"{current_len:,} / {MAX_INPUT_CHARS:,} characters")
 
 with col_out:
+    st.subheader("📖 Simplified Text (English)")
     result = st.session_state["result"]
     if result is None:
         st.markdown(
