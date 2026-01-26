@@ -313,6 +313,7 @@ st.markdown(
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         padding: var(--space-3);
+        overflow: hidden;
       }}
       .box-success {{
         background: var(--success-surface);
@@ -1097,7 +1098,7 @@ with tabs[1]:
             "translation_word": f"Word Translation ({target_lang_ui})",
             "translation_definition": f"Definition Translation ({target_lang_ui})",
         })
-        st.dataframe(df_vocab, hide_index=True, use_container_width=True)
+        st.dataframe(df_vocab, hide_index=True, width='stretch')
 
 with tabs[2]:
     if result is None:
