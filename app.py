@@ -11,9 +11,12 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # --- APP CONFIGURATION ---
+PANPHY_LOGO_URL = "https://panphy.github.io/panphy.png"
+PANPHY_FAVICON_URL = "https://panphy.github.io/favicon.png"
+
 st.set_page_config(
     page_title="EAL Learning Companion",
-    page_icon="🎓",
+    page_icon=PANPHY_FAVICON_URL,
     layout="wide"
 )
 
@@ -332,6 +335,20 @@ st.markdown(
       .app-hero {{
         background: linear-gradient(120deg, #f0f4ff, #ecf8f1);
         margin-bottom: var(--space-5);
+      }}
+      .app-hero-header {{
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+      }}
+      .app-logo {{
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        background: #ffffff;
+        padding: 6px;
       }}
       .stApp {{
         background-color: var(--color-bg);
@@ -838,10 +855,13 @@ if not isinstance(default_level, str) or default_level not in LEVEL_OPTIONS:
 # Main UI
 # -------------------------
 st.markdown(
-    """
+    f"""
     <div class="card app-hero stack">
       <div class="card-header">
-        <h1 class="title">🎓 EAL Learning Companion</h1>
+        <div class="app-hero-header">
+          <img src="{PANPHY_LOGO_URL}" alt="PanPhy logo" class="app-logo" />
+          <h1 class="title">EAL Learning Companion</h1>
+        </div>
       </div>
       <div class="card-body">
         <p class="subtitle">Paste a passage to get simplified English, a faithful translation, vocabulary support, and comprehension checks in one place.</p>
@@ -1128,8 +1148,11 @@ with tabs[2]:
 st.markdown(
     """
     <footer>
-        &copy; <a href="https://panphy.github.io/" target="_blank" rel="noopener noreferrer">PanPhy</a> |
-        <a href="https://buymeacoffee.com/panphy" target="_blank" rel="noopener noreferrer">Support My Projects</a>
+        <p>&copy; 2026 PanPhy Projects</p>
+        <p>
+          <a href="mailto:panphyprojects@icloud.com">Contact Me</a> •
+          <a href="https://buymeacoffee.com/panphy" target="_blank" rel="noopener noreferrer">Support My Projects</a>
+        </p>
     </footer>
     """,
     unsafe_allow_html=True,
