@@ -346,9 +346,9 @@ st.markdown(
         height: 48px;
         object-fit: contain;
         border-radius: 12px;
-        box-shadow: var(--shadow-sm);
-        background: #ffffff;
-        padding: 6px;
+        box-shadow: none;
+        background: transparent;
+        padding: 0;
       }}
       .stApp {{
         background-color: var(--color-bg);
@@ -859,7 +859,9 @@ st.markdown(
     <div class="card app-hero stack">
       <div class="card-header">
         <div class="app-hero-header">
-          <img src="{PANPHY_LOGO_URL}" alt="PanPhy logo" class="app-logo" />
+          <a href="https://panphy.github.io/?" target="_blank" rel="noopener noreferrer">
+            <img src="{PANPHY_LOGO_URL}" alt="PanPhy logo" class="app-logo" />
+          </a>
           <h1 class="title">EAL Learning Companion</h1>
         </div>
       </div>
