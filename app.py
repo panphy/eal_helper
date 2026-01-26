@@ -257,19 +257,23 @@ st.markdown(
       }}
       footer {{
         position: static;
-        font-size: 15px;
+        font-size: var(--font-size-1);
         text-align: center;
-        padding: 7px;
+        padding: var(--space-4) var(--space-2);
         background: transparent;
-        color: #555;
-        margin: 4px 0;
+        color: var(--color-text-muted);
+        margin-top: var(--space-6);
         width: 100%;
+        border-top: 1px solid var(--color-border);
       }}
       footer a {{
-        color: #ff5f1f;
+        color: var(--color-accent);
         text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
       }}
       footer a:hover {{
+        color: #1d4ed8;
         text-decoration: underline;
       }}
       .title {{
@@ -512,6 +516,60 @@ st.markdown(
       /* Reduce any extra top spacing inside columns */
       .block-container {{
         padding-top: var(--space-6);
+      }}
+      /* Character counter states */
+      .char-counter {{
+        font-size: var(--font-size-1);
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }}
+      .char-counter-ok {{
+        color: var(--color-text-muted);
+      }}
+      .char-counter-warning {{
+        color: var(--warning-text);
+      }}
+      .char-counter-danger {{
+        color: #dc2626;
+        font-weight: 600;
+      }}
+      /* Empty state styling */
+      .empty-state {{
+        text-align: center;
+        padding: var(--space-5) var(--space-4);
+        color: var(--color-text-muted);
+      }}
+      .empty-state-icon {{
+        font-size: 2rem;
+        margin-bottom: var(--space-2);
+        opacity: 0.6;
+      }}
+      .empty-state-text {{
+        font-size: var(--font-size-1);
+        line-height: 1.5;
+      }}
+      /* Protected terms display */
+      .protected-terms-container {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        margin-top: var(--space-2);
+      }}
+      .protected-term-tag {{
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        padding: var(--space-1) var(--space-3);
+        background: var(--success-surface);
+        color: var(--success-text);
+        border: 1px solid var(--success-border);
+        border-radius: 999px;
+        font-size: var(--font-size-1);
+        font-weight: 500;
+      }}
+      .protected-term-tag::before {{
+        content: "🔒";
+        font-size: 0.75rem;
       }}
     </style>
     """,
@@ -828,6 +886,17 @@ protected_raw = st.text_input(
 )
 protected_terms = parse_protected_terms(protected_raw)
 
+# Display protected terms as visual tags
+if protected_terms:
+    terms_html = "".join(
+        f'<span class="protected-term-tag">{html.escape(term)}</span>'
+        for term in protected_terms
+    )
+    st.markdown(
+        f'<div class="protected-terms-container">{terms_html}</div>',
+        unsafe_allow_html=True
+    )
+
 # Quick status row
 status_left, status_right = st.columns([1, 1])
 with status_left:
@@ -854,18 +923,31 @@ with col_in:
         on_change=reset_result
     )
     current_len = len(source_text or "")
-    st.caption(f"{current_len:,} / {MAX_INPUT_CHARS:,} characters")
+    char_ratio = current_len / MAX_INPUT_CHARS
+    if char_ratio > 1:
+        counter_class = "char-counter-danger"
+    elif char_ratio > 0.85:
+        counter_class = "char-counter-warning"
+    else:
+        counter_class = "char-counter-ok"
+    st.markdown(
+        f'<span class="char-counter {counter_class}">{current_len:,} / {MAX_INPUT_CHARS:,} characters</span>',
+        unsafe_allow_html=True
+    )
 
 with col_out:
     st.subheader("📖 Simplified Text (English)")
     result = st.session_state["result"]
     if result is None:
         st.markdown(
-            (
-                f'<div class="box box-success box-scroll text-success-muted">'
-                f'Click <b>Generate Support</b> to see the simplified text.'
-                f'</div>'
-            ),
+            f'''<div class="box box-success box-scroll" style="display: flex; align-items: center; justify-content: center;">
+                <div class="empty-state" style="padding: var(--space-3);">
+                    <div class="empty-state-icon" style="color: var(--success-text);">📖</div>
+                    <div class="empty-state-text" style="color: var(--success-text-muted);">
+                        Simplified text at <b>CEFR {cefr}</b> level<br/>will appear here
+                    </div>
+                </div>
+            </div>''',
             unsafe_allow_html=True
         )
     else:
@@ -878,10 +960,20 @@ with col_out:
 # Action button
 st.markdown("")
 action_col, clear_col = st.columns([1, 1])
+is_processing = st.session_state.get("is_processing", False)
 with action_col:
-    generate_clicked = st.button("✨ Generate Support", type="primary")
+    generate_clicked = st.button(
+        "✨ Generate Support",
+        type="primary",
+        disabled=is_processing
+    )
 with clear_col:
-    st.button("🧹 Clear", type="secondary", on_click=clear_input)
+    st.button(
+        "🧹 Clear",
+        type="secondary",
+        on_click=clear_input,
+        disabled=is_processing
+    )
 
 if generate_clicked:
     if not source_text or not source_text.strip():
@@ -968,13 +1060,31 @@ tabs = st.tabs(
 
 with tabs[0]:
     if result is None:
-        st.caption("Generate support first. The translation will appear here.")
+        st.markdown(
+            f'''<div class="empty-state">
+                <div class="empty-state-icon">🌍</div>
+                <div class="empty-state-text">
+                    Paste your text and click <b>Generate Support</b><br/>
+                    to see the full translation in {target_lang_ui}
+                </div>
+            </div>''',
+            unsafe_allow_html=True
+        )
     else:
         st.info(result.get("full_translation") or "(No translation returned)")
 
 with tabs[1]:
     if result is None:
-        st.caption("Generate support first. Vocabulary will appear here.")
+        st.markdown(
+            '''<div class="empty-state">
+                <div class="empty-state-icon">🔑</div>
+                <div class="empty-state-text">
+                    5 key vocabulary words with definitions<br/>
+                    and translations will appear here
+                </div>
+            </div>''',
+            unsafe_allow_html=True
+        )
     else:
         df_vocab = pd.DataFrame(result.get("vocabulary", []))
         expected_cols = ["word", "definition", "translation_word", "translation_definition"]
@@ -987,11 +1097,20 @@ with tabs[1]:
             "translation_word": f"Word Translation ({target_lang_ui})",
             "translation_definition": f"Definition Translation ({target_lang_ui})",
         })
-        st.dataframe(df_vocab, hide_index=True, width="stretch")
+        st.dataframe(df_vocab, hide_index=True, use_container_width=True)
 
 with tabs[2]:
     if result is None:
-        st.caption("Generate support first. Questions will appear here.")
+        st.markdown(
+            '''<div class="empty-state">
+                <div class="empty-state-icon">✅</div>
+                <div class="empty-state-text">
+                    3 comprehension questions tailored to<br/>
+                    your English level will appear here
+                </div>
+            </div>''',
+            unsafe_allow_html=True
+        )
     else:
         qs = result.get("questions", [])
         counter = 0
