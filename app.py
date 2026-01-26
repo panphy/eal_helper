@@ -313,6 +313,7 @@ st.markdown(
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
         padding: var(--space-3);
+        overflow: hidden;
       }}
       .box-success {{
         background: var(--success-surface);
