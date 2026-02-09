@@ -1152,7 +1152,7 @@ st.markdown(
     <footer>
         <p>&copy; 2026 PanPhy Projects</p>
         <p>
-          <a href="mailto:panphyprojects@icloud.com">Contact Me</a> •
+          <a href="mailto:panphylabs@icloud.com">Contact Me</a> •
           <a href="https://buymeacoffee.com/panphy" target="_blank" rel="noopener noreferrer">Support My Projects</a>
         </p>
     </footer>
