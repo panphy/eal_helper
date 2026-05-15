@@ -97,7 +97,7 @@ CSS is embedded in `app.py` using `st.html()`. Follow the design system:
 ## AI Integration Details
 
 ### OpenAI Configuration
-- Model: `gpt-5-mini`
+- Model: `gpt-5.4-mini`
 - Response format: Structured JSON with schema validation
 - Retry logic: 3 attempts with varied system prompts
 

@@ -723,7 +723,7 @@ INPUT_TEXT:
                         f"{prompt}"
                     )
                 response = client.chat.completions.create(
-                    model="gpt-5-mini",
+                    model="gpt-5.4-mini",
                     messages=[
                         {"role": "system", "content": system_message},
                         {"role": "user", "content": user_prompt}
