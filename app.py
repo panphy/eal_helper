@@ -14,8 +14,9 @@ from datetime import datetime, timezone
 from openai import APIError, APITimeoutError, RateLimitError
 
 # --- APP CONFIGURATION ---
-PANPHY_LOGO_URL = "https://panphy.github.io/assets/panphy.png"
-PANPHY_FAVICON_URL = "https://panphy.github.io/assets/favicon.png"
+PANPHY_SITE_URL = "https://panphy.app"
+PANPHY_LOGO_URL = f"{PANPHY_SITE_URL}/assets/panphy.png"
+PANPHY_FAVICON_URL = f"{PANPHY_SITE_URL}/assets/favicon.png"
 
 st.set_page_config(
     page_title="EAL Learning Companion",
@@ -114,7 +115,7 @@ class UsageLimitError(ValueError):
 if "OPENAI_API_KEY" in st.secrets:
     api_key = st.secrets["OPENAI_API_KEY"]
 else:
-    st.error("🚨 Admin Error: OpenAI API Key not found in secrets.")
+    st.error("Admin error: OpenAI API key not found in secrets.")
     st.stop()
 
 client = get_client(api_key)
@@ -406,7 +407,13 @@ st.markdown(
       }}
       div[data-testid="stExpander"] {{
         border-radius: var(--radius-md);
+      }}
+      div[data-testid="stExpander"] > details {{
+        border-radius: var(--radius-md);
         overflow: hidden;
+      }}
+      div[data-testid="stExpander"] > details > summary {{
+        border-radius: 0;
       }}
       .stButton > button {{
         border-radius: var(--radius-md);
@@ -490,10 +497,6 @@ st.markdown(
         border-radius: 999px;
         font-size: var(--font-size-1);
         font-weight: 500;
-      }}
-      .protected-term-tag::before {{
-        content: "🔒";
-        font-size: 0.75rem;
       }}
       .reading-card {{
         background: var(--color-surface);
@@ -691,7 +694,7 @@ st.markdown(
     <div class="card app-hero stack">
       <div class="card-header">
         <div class="app-hero-header">
-          <a href="https://panphy.github.io/?" target="_blank" rel="noopener noreferrer">
+          <a href="{PANPHY_SITE_URL}" target="_blank" rel="noopener noreferrer">
             <img src="{PANPHY_LOGO_URL}" alt="PanPhy logo" class="app-logo" />
           </a>
           <h1 class="title">EAL Learning Companion</h1>
@@ -761,7 +764,7 @@ else:
 
 with col_in:
     source_text = st.text_area(
-        "📝 Your passage",
+        "Your passage",
         height=BOX_HEIGHT_PX,
         placeholder="Example: Photosynthesis is the process used by plants to convert light energy into chemical energy...",
         key="source_text",
@@ -783,7 +786,7 @@ with col_in:
     is_processing = st.session_state.get("is_processing", False)
     with action_col:
         generate_clicked = st.button(
-            "✨ Generate Support",
+            "Generate Support",
             type="primary",
             disabled=is_processing,
             use_container_width=True,
@@ -800,19 +803,19 @@ with col_in:
 
 if col_out is not None:
     with col_out:
-        st.subheader(f"📖 Simplified English · CEFR {cefr}")
+        st.subheader(f"Simplified English · CEFR {cefr}")
         simp = result.get("simplified_text") or ""
         render_copyable_text(simp, "simplified-reading", "Copy simplified text")
 
 if generate_clicked:
     if not source_text or not source_text.strip():
-        feedback_slot.warning("⚠️ Please paste some text first.")
+        feedback_slot.warning("Please paste some text first.")
     elif len(source_text) > MAX_INPUT_CHARS:
-        feedback_slot.warning(f"⚠️ Input is too long. Please keep it under {MAX_INPUT_CHARS:,} characters.")
+        feedback_slot.warning(f"Input is too long. Please keep it under {MAX_INPUT_CHARS:,} characters.")
     elif not any(char.isalpha() for char in source_text):
-        feedback_slot.warning("⚠️ Please enter a passage containing words.")
+        feedback_slot.warning("Please enter a passage containing words.")
     elif any(term not in source_text for term in protected_terms):
-        feedback_slot.warning("⚠️ Each protected term must appear exactly in the input text.")
+        feedback_slot.warning("Each protected term must appear exactly in the input text.")
     else:
         now = time.time()
         call_times = [
@@ -823,12 +826,12 @@ if generate_clicked:
 
         if st.session_state["call_count"] >= SESSION_QUOTA_MAX_CALLS:
             feedback_slot.warning(
-                "⚠️ Session quota reached. Please refresh later or start a new session."
+                "Session quota reached. Please refresh later or start a new session."
             )
         elif len(call_times) >= RATE_LIMIT_MAX_CALLS:
             wait_seconds = max(1, int(RATE_LIMIT_WINDOW_SECONDS - (now - min(call_times)) + 0.999))
             feedback_slot.warning(
-                f"⚠️ Too many requests. Please wait {wait_seconds} seconds and try again."
+                f"Too many requests. Please wait {wait_seconds} seconds and try again."
             )
         else:
             st.session_state["is_processing"] = True
@@ -871,9 +874,9 @@ if result is not None:
     st.divider()
     tabs = st.tabs(
         [
-            "🌍 Translation",
-            "🔑 Words",
-            "✅ Questions",
+            "Translation",
+            "Words",
+            "Questions",
         ]
     )
 
