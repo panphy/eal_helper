@@ -1,33 +1,38 @@
-# Academic Text Helper
+# EAL Learning Companion
 
-Academic Text Helper is a lightweight web app built to support EAL learners when reading challenging subject content. Students paste in a paragraph from a lesson, worksheet, or textbook, and the app produces a clearer, level-appropriate version of the same ideas without losing key meaning. It also provides a full translation of the original text, plus a focused vocabulary scaffold to help students learn the academic language rather than just “look up” answers.
+A Streamlit app that helps English as an Additional Language (EAL) student read an academic passage. Paste up to 4,000 characters, choose a translation language and an English level, then generate:
 
-## What it does
+- Simplified English at CEFR A2, B1, or B2.
+- A translation of the **original** passage.
+- Up to five vocabulary cards with simple English meanings and translated words and meanings.
+- Three comprehension questions with suggested answers.
 
-- Simplifies academic English to a chosen CEFR level (A2, B1, B2).
-- Preserves key terms using an optional “protected vocabulary” list (useful for science and other technical subjects).
-- Translates the full original text into the student’s chosen language.
-- Builds a vocabulary table with:
-  - The target word.
-  - A simple English definition.
-  - A translation of the word.
-  - A translation of the definition.
-- Generates quick comprehension questions to check understanding.
+You can optionally list key terms that must stay unchanged in the simplified text. Each term must appear exactly in the passage. Simplified text and translations have copy buttons. The layout works on desktop and phones.
 
-## Why this exists
+Translation languages: Arabic, Simplified and Traditional Chinese, French, German, Japanese, Polish, Portuguese, Russian, Spanish, Thai, Turkish, and Urdu.
 
-EAL students often understand the concept but get blocked by dense vocabulary, long sentences, or unfamiliar academic phrasing. This tool is designed to reduce that language barrier while encouraging progress in English, making it easier for students to engage with the same curriculum content as their peers.
+## Run locally
 
-## Notes
+Use Python 3.11 or newer:
 
-This app uses an OpenAI model to generate outputs. As with any AI tool, it can occasionally simplify too much or miss nuance, so it should be used as a scaffold, not as a substitute for teacher explanations or mark schemes.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-## AI usage limits
+Create `.streamlit/secrets.toml` with your OpenAI API key:
 
-To keep usage fair and predictable, the app enforces a per-session quota and rate limiting for AI requests. Each browser session is limited to a fixed number of AI calls; once the quota is reached, the app will ask the user to start a new session. Requests are also throttled to prevent rapid, repeated calls in a short time window.
+```toml
+OPENAI_API_KEY = "your-key-here"
+```
 
-## Tech stack
+The secrets file is ignored by Git. Start the app with `streamlit run app.py` and open the local URL shown in the terminal (normally port 8501).
 
-- Backend: Python + Streamlit
-- AI: OpenAI API
-- Frontend: Streamlit components (HTML/CSS rendered by Streamlit)
+## Model and limits
+
+The app calls OpenAI `gpt-6-luna` and checks responses against a strict JSON Schema plus local content rules. An incomplete result may trigger one retry. Each model attempt has a 40-second timeout.
+
+Each browser session gets 20 generation requests and at most three requests per minute. Across sessions on one app host, the app allows 200 model calls per UTC day and 30 per minute. Retries count toward the shared allowance. Counts are stored in `.eal_helper_usage.sqlite3`; set `EAL_USAGE_DB_PATH` to use another location. A deployment on multiple hosts needs a shared store or provider-side spending limit for a deployment-wide cap.
+
+Language and English level selections last for the current browser session. AI simplification and translation can miss nuance, so students should check important details with a teacher or the source text.

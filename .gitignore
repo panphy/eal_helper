@@ -18,6 +18,7 @@ env/
 
 # Local app/runtime artifacts
 .eal_helper_prefs.json
+.eal_helper_usage.sqlite3*
 
 # Streamlit local secrets
 .streamlit/secrets.toml
